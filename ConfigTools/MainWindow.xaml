@@ -1,0 +1,123 @@
+﻿<Window x:Class="ConfigTools.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Fluent="urn:fluent-ribbon"
+        xmlns:local="clr-namespace:ConfigTools"
+        mc:Ignorable="d"
+        Title="互动工具"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="{x:Null}"            
+        WindowStartupLocation="CenterScreen"             
+        Height="240" Width="380"
+        >
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ButtonMouseOver.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+
+    <Grid x:Name="ConfigView" Background="#191D21" MouseLeftButtonDown="ConfigView_MouseLeftButtonDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0.5*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.3*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="0.5*"/>
+                <ColumnDefinition Width="0.5*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Padding="3">
+                <Image Height="20"  HorizontalAlignment="Left" Source="pack://application:,,,/images/logo.png" />
+            </Border>
+            <Border Grid.Column="1" Padding="5">
+                <TextBlock  VerticalAlignment="Center" Text="互动工具" Foreground="AliceBlue" HorizontalAlignment="Left"/>
+            </Border>
+            <Border  Grid.Column="2" Background="#191D21"  BorderThickness="0" Margin="0" Padding="0">
+                <Button  x:Name="Min" Background="#191D21" Click="Min_Click"  BorderThickness="0" Margin="0" Padding="0">
+                    <StackPanel >
+                        <Image Height="20"  Source="pack://application:,,,/images/minimize.png"></Image>
+                    </StackPanel>
+                </Button>
+            </Border>
+            <Border Grid.Column="3" Background="#191D21" BorderThickness="0">
+                <Button  x:Name="Close" Background="#191D21" Click="Close_Click" BorderThickness="0" Margin="0" Padding="0">
+                    <StackPanel >
+                        <Image Height="10"  Source="pack://application:,,,/images/close.png"></Image>
+                    </StackPanel>
+                </Button>
+            </Border>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Label  Foreground="AliceBlue" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Margin="10"  Content="互动课堂服务IP:"></Label>
+            <TextBox x:Name="IP" Grid.Column="1" Height="20" Width="150" HorizontalAlignment="Left"  TextChanged="Ip_Changed">
+                <!--<TextBox.Resources>
+                    <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.5" Stretch="None"  AlignmentX="Left" >
+                        <VisualBrush.Visual>
+                            <TextBlock  Background="AliceBlue" FontStyle="Italic" Text="请配置服务IP"/>
+                            
+                        </VisualBrush.Visual>
+                    </VisualBrush>
+                </TextBox.Resources>
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Style.Triggers>
+                            <Trigger Property="Text" Value="{x:Null}">
+                                <Setter Property="Background" Value="{StaticResource HintText}"/>
+                            </Trigger>
+                            <Trigger Property="Text" Value="">
+                                <Setter Property="Background" Value="{StaticResource HintText}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>-->
+            </TextBox>
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtIpTip" Text="请配置服务IP" Padding="10" MouseDown="txtIpTip_MouseDown"></TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Label  Foreground="AliceBlue" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Margin="10"  Content="互动课堂服务端口:"></Label>
+            <TextBox x:Name="Port" Grid.Column="1" Height="20" Width="150" HorizontalAlignment="Left" TextChanged="Port_TextChanged">
+
+            </TextBox>
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtPortTip" Text="请配置服务端口" Padding="10" MouseDown="txtPortTip_MouseDown"></TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Label  Foreground="AliceBlue" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Margin="10"  Content="互动终端MAC:"></Label>
+            <TextBox x:Name="Mac" Grid.Column="1" Height="20" Width="150" HorizontalAlignment="Left" TextChanged="Mac_TextChanged"></TextBox>
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtMacTip" Text="请配置互动终端MAC" Padding="10" MouseDown="txtMacTip_MouseDown"></TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button  HorizontalAlignment="Center" VerticalAlignment="Center" Width="100" Background="#1890FF"  Height="30" Content="完成配置" Foreground="AliceBlue" Click="Button_Click"></Button>
+        </Grid>
+    </Grid>
+
+</Window>

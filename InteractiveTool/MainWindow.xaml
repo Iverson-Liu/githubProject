@@ -1,0 +1,83 @@
+﻿<Window x:Class="InteractiveTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:InteractiveTool"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual" 
+        Background="{x:Null}"
+        ShowInTaskbar="False"
+        x:Name="MainTool"
+        Left="650"
+        Top="880"
+        >
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ButtonMouseOver.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid   x:Name="ToolView" Width="500" Height="64"  MouseLeftButtonDown="ToolView_MouseLeftButtonDown">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="80"/>
+            <ColumnDefinition  x:Name="show"/>
+        </Grid.ColumnDefinitions>
+
+        <Border  x:Name="expander" Grid.Column="0" Background="#111214" BorderThickness="0,0,1,0" BorderBrush="AliceBlue"  CornerRadius="0,0,0,0">
+            <Button Width="60" Background="#111214" VerticalAlignment="Center"  Style="{DynamicResource MouseOverButtonStyle}"   Click="fold_Click" >
+                <StackPanel Width="50"  Background="#111214">
+                    <Image x:Name="expander_bg" Width="35" Source="images/fold.png"/>
+                </StackPanel>
+            </Button>
+        </Border>
+
+        <Grid x:Name="MainView" Grid.Column="1" Visibility="Visible"  Background="#111214" MouseEnter="ToolView_MouseEnter" MouseLeave="ToolView_MouseLeave">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="0" x:Name="teachingMode" BorderThickness="0" Click="teachingMode_Click">
+                <StackPanel Width="50"  Background="#111214">
+                    <Image x:Name="teachingBtBg" Width="35" Source="images/teachingUnselect.png"/>
+                    <TextBlock x:Name="teachingBtTxt" Foreground="AliceBlue" HorizontalAlignment="Center" Text="授课模式"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="1" x:Name="discussingMode" BorderThickness="0" Click="discussingMode_Click">
+                <StackPanel Width="50"  Background="#111214">
+                    <Image x:Name="discussingBtBg" Width="35" Source="images/discussingUnselect.png"/>
+                    <TextBlock x:Name="discussingBtTxt" Foreground="AliceBlue" HorizontalAlignment="Center" Text="讨论模式"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Style="{DynamicResource OtherButtonStyle}"  Background="#111214" Grid.Column="2" x:Name="interactionMode" BorderThickness="0" Click="interactionMode_Click">
+                <StackPanel Width="50"  Background="#111214">
+                    <Image x:Name="interactionBtBg" Width="35" Source="images/interactionUnselect.png"/>
+                    <TextBlock x:Name="interactionBtTxt" Foreground="AliceBlue" HorizontalAlignment="Center" Text="互动听讲"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="3"  x:Name="slienceMode"  BorderThickness="0" Click="slienceMode_Click">
+                <StackPanel  Width="50"  Background="#111214">
+                    <Image x:Name="slienceBtBg" Width="35" Source="images/slience.png"/>
+                    <TextBlock x:Name="slienceBtTxt" Foreground="AliceBlue" HorizontalAlignment="Center" Text="全员静音"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Width="80" Height="30" Grid.Column="4" x:Name="end" Click="end_Click" Content="结束互动" Foreground="AliceBlue" Background="#FF4D4F">
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

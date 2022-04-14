@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32228.343
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigTools", "ConfigTools.csproj", "{A79A81CC-6C92-45ED-B8B0-C5B37C505712}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteractiveTool", "..\InteractiveTool\InteractiveTool.csproj", "{058F842C-F194-491D-B71D-24F00D6A2BBB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A79A81CC-6C92-45ED-B8B0-C5B37C505712}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A79A81CC-6C92-45ED-B8B0-C5B37C505712}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A79A81CC-6C92-45ED-B8B0-C5B37C505712}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A79A81CC-6C92-45ED-B8B0-C5B37C505712}.Release|Any CPU.Build.0 = Release|Any CPU
+		{058F842C-F194-491D-B71D-24F00D6A2BBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{058F842C-F194-491D-B71D-24F00D6A2BBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{058F842C-F194-491D-B71D-24F00D6A2BBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{058F842C-F194-491D-B71D-24F00D6A2BBB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1E02CCBA-1E6F-448A-BDE6-8C4797DF86B4}
+	EndGlobalSection
+EndGlobal
