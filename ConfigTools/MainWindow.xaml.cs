@@ -35,21 +35,27 @@ namespace ConfigTools
             {
                 CreateXml();
             }
-
-            WriteXml("ServerIp", IP.Text);
-            WriteXml("ServerPort", Port.Text);
-            WriteXml("ServerMac", Mac.Text);
-            //WriteRegister();
-            AutoStartUp auto = new AutoStartUp("InteractiveTool.exe");
-            auto.SetMeAutoStart();
-            MessageBoxResult result = MessageBox.Show("配置完成,需要重启生效.是否立即重启", "结束", MessageBoxButton.YesNo);
-            if (result == MessageBoxResult.Yes)
+            if (string.IsNullOrEmpty(IP.Text) || string.IsNullOrEmpty(Port.Text) || string.IsNullOrEmpty(Mac.Text))
             {
-                ReStart();
+                MessageBox.Show("有配置项为空,禁止写入");
             }
             else
             {
-                this.Close();
+                WriteXml("ServerIp", IP.Text);
+                WriteXml("ServerPort", Port.Text);
+                WriteXml("ServerMac", Mac.Text);
+                //WriteRegister();
+                AutoStartUp auto = new AutoStartUp("InteractiveTool.exe");
+                auto.SetMeAutoStart();
+                MessageBoxResult result = MessageBox.Show("配置完成,需要重启生效.是否立即重启", "结束", MessageBoxButton.YesNo);
+                if (result == MessageBoxResult.Yes)
+                {
+                    ReStart();
+                }
+                else
+                {
+                    this.Close();
+                }
             }
         }
         public void CreateXml()

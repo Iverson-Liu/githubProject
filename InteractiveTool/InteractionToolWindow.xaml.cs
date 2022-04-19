@@ -29,7 +29,7 @@ namespace InteractiveTool
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class InteractionToolWindow : Window
     {
         public static string IP;//读取配置文件IP
         public static string Port;//读取配置文件端口
@@ -37,6 +37,7 @@ namespace InteractiveTool
         public static string Url;
         public static string interactionId;//查询当前互动ID
         public static string curriculumName;//查询当前课程名
+        public static bool showstatus = true;
         public static string MainDeviceId;
 
 
@@ -50,7 +51,8 @@ namespace InteractiveTool
 
         ISubscriber sub;
 
-        public MainWindow()
+
+        public InteractionToolWindow()
         {
 
             IP = ReadConfig("ServerIp");
@@ -59,31 +61,39 @@ namespace InteractiveTool
             if (!ConfigEmpty())
             {
                 MessageBox.Show("配置文件中存在相关配置缺失", "警告");
+
                 this.Close();
             }
+
             InitTimer();
             InitHideTimer();
             FindCurriculum();
 
             RedisClient();
             InitializeComponent();
+
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
             SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
-            subView.Top = this.Top - 64;
+            subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
         }
 
-        public void ProcessOnly()
-        {
-            Process[] processes = Process.GetProcesses();
-            for (int i = 0; i < processes.Length; i++)
-            {
-                if (processes[i].ProcessName == "InteractiveTool")
-                {
-                    return;
-                }
-            }
-        }
+        //public void ProcessOnly()
+        //{
+        //    string test = Process.GetCurrentProcess().ProcessName;
+        //    int instanceNum = RunningInstance(Process.GetCurrentProcess().ProcessName);
+        //    if (instanceNum > 1)
+        //    {
+
+        //        Process[] other = Process.GetProcessesByName(test);
+
+        //        for (int i = 1; i < other.Length; i++)
+        //        {
+        //            other[i].Kill();
+        //        }
+        //    }
+        //}
+     
         /// <summary>
         /// 收起工具栏定时
         /// </summary>
@@ -217,12 +227,11 @@ namespace InteractiveTool
                             joinclass.Left = left;
                             top = top + joinclass.Height;
                             joinclass.Topmost = istop;
-
-                            joinclass.Show();
                             if (istop == false)
                             {
                                 tip.Topmost = true;
                             }
+                            joinclass.Show();
                             if (top >= (desktopWorkingArea.Bottom))
                             {
                                 top = desktopWorkingArea.Bottom - 3 * joinclass.Height;
@@ -450,8 +459,13 @@ namespace InteractiveTool
                         this.Visibility = Visibility.Visible;
                         var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
                         this.Left = (0.5 * desktopWorkingArea.Right) - 250;
-                        this.Top = desktopWorkingArea.Bottom - this.Height - 150;
+                        this.Top = desktopWorkingArea.Bottom - 64 - 150;
                         this.Show();
+                        if (showstatus == false)
+                        {
+                            this.Topmost = true;
+                            ShowToolView();
+                        }
                     }
                     StopTimer();
                     IEnumerable<JProperty> properties = data.Properties();
@@ -470,6 +484,10 @@ namespace InteractiveTool
                 }
                 else
                 {
+                    if (SelectWindowsExit() != null)
+                    {
+                        SelectWindowsExit().Close();
+                    }
                     if (this.Visibility == Visibility.Visible)
                     {
                         this.Visibility = Visibility.Hidden;
@@ -482,7 +500,7 @@ namespace InteractiveTool
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "异常信息");
-                this.Close();
+
             }
         }
 
@@ -553,32 +571,48 @@ namespace InteractiveTool
         {
             this.Dispatcher.Invoke(() =>
             {
-                ToolView.Width = 650;
+                showstatus = true;
+                ToolView.Width = 584;
+                ToolView.Height = 64;
+                expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);
                 MainView.Visibility = Visibility.Visible;
                 ToolView.ColumnDefinitions.Add(show);
                 ToolView.Children.Add(MainView);
-                expander.CornerRadius = new CornerRadius(0, 0, 0, 0);
+                line.Visibility = Visibility.Visible;
+                expandergd.ColumnDefinitions.Add(spline);
+                expandergd.Children.Add(line);
                 expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
                 var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
                 this.Left = (0.5 * desktopWorkingArea.Right) - 250;
-                MainTool.Top = desktopWorkingArea.Bottom - this.Height - 150;
+                MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
             });
         }
         public void HideToolView()
         {
             this.Dispatcher.Invoke(() =>
             {
+                showstatus = false;
+                if (SelectWindowsExit() != null)
+                {
+                    SelectWindowsExit().Close();
+                }
+                ToolView.Width = 68;
+                ToolView.Height = 50;
+
                 MainView.Visibility = Visibility.Hidden;
                 ToolView.Children.Remove(MainView);
                 ToolView.ColumnDefinitions.Remove(show);
-                ToolView.Width = 80;
-                expander.CornerRadius = new CornerRadius(30, 30, 0, 0);
+                line.Visibility = Visibility.Hidden;
+                expandergd.Children.Remove(line);
+                expandergd.ColumnDefinitions.Remove(spline);
+                expanderbd.CornerRadius = new CornerRadius(25, 25, 0, 0);
                 expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/unfold.png"));
                 var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                MainTool.Top = desktopWorkingArea.Bottom - this.Height;
+                MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height;
                 StopHideTimer();
             });
         }
+
         public bool ShowOrHide()
         {
 
@@ -603,7 +637,6 @@ namespace InteractiveTool
         {
             try
             {
-
                 ShowOrHide();
             }
             catch (Exception ex)
@@ -668,12 +701,12 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void interactionMode_Click(object sender, RoutedEventArgs e)
         {
-            int interMode = 2;
-            bool result = Update_interaction_info(interMode, interactionId);
-            if (!result)
-            {
-                MessageBox.Show("互动听讲请求失败", "提示");
-            }
+            //int interMode = 2;
+            //bool result = Update_interaction_info(interMode, interactionId);
+            //if (!result)
+            //{
+            //    MessageBox.Show("互动听讲请求失败", "提示");
+            //}
             this.Dispatcher.Invoke(() =>
             {
                 interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
@@ -684,14 +717,13 @@ namespace InteractiveTool
                 discussingBtTxt.Foreground = Brushes.AliceBlue;
                 if (SelectWindowsExit() != null)
                 {
-
-                    SelectWindowsExit().Show();
+                    SelectWindowsExit().ShowDialog();
                 }
                 else
                 {
                     SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
                     var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                    subView.Top = desktopWorkingArea.Bottom - subView.Height - this.Height - 160;
+                    subView.Top = desktopWorkingArea.Bottom - subView.Height - 64 - 160;
                     subView.ShowDialog();
                 }
             });
@@ -748,9 +780,7 @@ namespace InteractiveTool
         {
             foreach (Window item in Application.Current.Windows)
             {
-
                 if (item is SelectLecture)
-
                     return item;
             }
             return null;
@@ -771,16 +801,20 @@ namespace InteractiveTool
 
         private void end_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(interactionId))
+            this.Dispatcher.Invoke(() =>
             {
-                Class_End();
-            }
-            if (SelectWindowsExit() != null)
-            {
-                SelectWindowsExit().Close();
-            }
-            this.Hide();
-            StartTimer();
+                if (!string.IsNullOrEmpty(interactionId))
+                {
+                    Class_End();
+                }
+                if (SelectWindowsExit() != null)
+                {
+                    SelectWindowsExit().Close();
+                }
+                this.Visibility = Visibility.Hidden;
+                this.Hide();
+                StartTimer();
+            });
         }
 
         private void ToolView_MouseEnter(object sender, MouseEventArgs e)

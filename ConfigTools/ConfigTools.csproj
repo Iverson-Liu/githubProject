@@ -146,11 +146,11 @@
     <Resource Include="configtools.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="images\close.png" />
-    <Resource Include="images\minimize.png" />
+    <Resource Include="images\logo.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="images\logo.png" />
+    <Resource Include="images\close.png" />
+    <Resource Include="images\minimize.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

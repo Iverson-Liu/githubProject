@@ -7,14 +7,14 @@
                 <ControlTemplate TargetType="{x:Type Button}">
                     <ControlTemplate.Resources>
                         <Style x:Key="ShadowStyle">
-                            <Setter Property="Control.Foreground" Value="AliceBlue" />
+                            <Setter Property="Control.Foreground" Value="White" />
                         </Style>
                     </ControlTemplate.Resources>
                     <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="AliceBlue" CornerRadius="0" Background="{TemplateBinding Background}">
                         <Grid >
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Name="contentShadow" Style="{StaticResource ShadowStyle}">
                                 <ContentPresenter.RenderTransform>
-                                    <TranslateTransform X="1.0" Y="1.0" />
+                                    <TranslateTransform X="0" Y="0" />
                                 </ContentPresenter.RenderTransform>
                             </ContentPresenter>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Name="content"/>
@@ -55,6 +55,116 @@
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="Beige" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    
+    <Style x:Key="OverClassButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="ShadowStyle">
+                            <Setter Property="Control.Foreground" Value="White" />
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                        <TextBlock Text="结束互动" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#FF4D4F" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="AgreeButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="ShadowStyle">
+                            <Setter Property="Control.Foreground" Value="White" />
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                        <TextBlock Text="同意" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#1890FF" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="DisagreeButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="ShadowStyle">
+                            <Setter Property="Control.Foreground" Value="White" />
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                        <TextBlock Text="拒绝" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#FF4D4F" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    
+    <Style x:Key="OkButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="ShadowStyle">
+                            <Setter Property="Control.Foreground" Value="White" />
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                        <TextBlock Text="确定" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#1890FF" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    
+    <Style x:Key="CancelButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="ShadowStyle">
+                            <Setter Property="Control.Foreground" Value="Black" />
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                        <TextBlock Text="取消" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="White" />
             </Trigger>
         </Style.Triggers>
     </Style>

@@ -13,8 +13,7 @@
         Background="{x:Null}"
         ShowInTaskbar="False"
         x:Name="MainTool"
-        Left="650"
-        Top="880"
+    
         >
 
     <Window.Resources>
@@ -25,7 +24,7 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid   x:Name="ToolView" Width="500" Height="64"  MouseLeftButtonDown="ToolView_MouseLeftButtonDown">
+    <Grid   x:Name="ToolView" Width="650" Height="64"  MouseLeftButtonDown="ToolView_MouseLeftButtonDown">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="80"/>
             <ColumnDefinition  x:Name="show"/>
@@ -39,7 +38,7 @@
             </Button>
         </Border>
 
-        <Grid x:Name="MainView" Grid.Column="1" Visibility="Visible"  Background="#111214" MouseEnter="ToolView_MouseEnter" MouseLeave="ToolView_MouseLeave">
+        <Grid x:Name="MainView"  Grid.Column="1" Visibility="Visible"  Background="#111214" MouseEnter="ToolView_MouseEnter" MouseLeave="ToolView_MouseLeave">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
