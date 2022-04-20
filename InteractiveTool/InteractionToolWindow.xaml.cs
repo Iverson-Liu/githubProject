@@ -93,7 +93,7 @@ namespace InteractiveTool
         //        }
         //    }
         //}
-     
+
         /// <summary>
         /// 收起工具栏定时
         /// </summary>
@@ -801,20 +801,21 @@ namespace InteractiveTool
 
         private void end_Click(object sender, RoutedEventArgs e)
         {
-            this.Dispatcher.Invoke(() =>
+
+            if (!string.IsNullOrEmpty(interactionId))
             {
-                if (!string.IsNullOrEmpty(interactionId))
+                this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
                 {
                     Class_End();
-                }
-                if (SelectWindowsExit() != null)
-                {
-                    SelectWindowsExit().Close();
-                }
-                this.Visibility = Visibility.Hidden;
-                this.Hide();
-                StartTimer();
-            });
+                });
+            }
+            if (SelectWindowsExit() != null)
+            {
+                SelectWindowsExit().Close();
+            }
+            this.Visibility = Visibility.Hidden;
+            this.Hide();
+            StartTimer();
         }
 
         private void ToolView_MouseEnter(object sender, MouseEventArgs e)
