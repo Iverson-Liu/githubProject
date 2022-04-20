@@ -38,7 +38,6 @@ namespace InteractiveTool
         {
             if (SelectWindowsExit() != null)
             {
-
                 SelectWindowsExit().Close();
             }
             this.IP = ip;
@@ -49,6 +48,7 @@ namespace InteractiveTool
             {
                 InteractiveDeviceId = new List<string>();
             }
+            this.Closing += Tips_Closing;
             InitializeComponent();
 
             message.Text = Message + "申请互动";
@@ -295,11 +295,19 @@ namespace InteractiveTool
                 return false;
             }
         }
-
-        private void disagree_Click(object sender, RoutedEventArgs e)
+        public void Tips_Closing(object sender, System.ComponentModel.CancelEventArgs args)
+        {
+            Dispose();
+        }
+        public static void Dispose()
         {
             InteractiveDeviceId.Clear();
             InteractiveDeviceId = null;
+        }
+
+        private void disagree_Click(object sender, RoutedEventArgs e)
+        {
+
             this.Close();
         }
 
@@ -344,8 +352,7 @@ namespace InteractiveTool
             }
             finally
             {
-                InteractiveDeviceId.Clear();
-                InteractiveDeviceId = null;
+
                 this.Close();
             }
         }

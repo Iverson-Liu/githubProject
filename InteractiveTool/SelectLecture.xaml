@@ -48,7 +48,7 @@
                             </Grid.ColumnDefinitions>
 
                             <!--<Border VerticalAlignment="Top" BorderThickness="0" Padding="0" Margin="0">
-                                <CheckBox  Height="25" Grid.Column="0" Background="#1890FF " HorizontalAlignment="Left"  VerticalAlignment="Center" Click="interactionCb_Click"  Content="北京市第一小学" FontSize="18"  Foreground="AliceBlue"/>
+                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="25" Grid.Column="0"   HorizontalAlignment="Left"  VerticalAlignment="Center" Click="interactionCb_Click"  Content="北京市第一小学" FontSize="12"  Foreground="AliceBlue"/>
                             </Border>
                             <Button  Style="{DynamicResource OtherButtonStyle}"  Margin="0"  Background="#111214" Height="25" Width="40" IsEnabled="False"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Column="1"  Click="mic_Click" Padding="0" BorderThickness="0">
                                 <StackPanel  Margin="0" Background="#111214" >

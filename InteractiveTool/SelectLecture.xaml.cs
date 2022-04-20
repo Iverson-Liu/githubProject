@@ -358,13 +358,12 @@ namespace InteractiveTool
                     checkBox.SetValue(Grid.ColumnProperty, 0);
                     checkBox.FontSize = 16;
                     checkBox.Height = 20;
-                    //checkBox.Style = this.FindResource("CheckBoxStyle") as Style;
-                    button.Name = "bt_" + i;
 
+                    button.Name = "bt_" + i;
                     button.SetValue(Grid.ColumnProperty, 1);
                     button.SetValue(Grid.RowProperty, i);
                     button.Style = this.FindResource("OtherButtonStyle") as Style;
-                    button.Height = 20;
+                    button.Height = 18;
                     button.Width = 21;
                     button.Click += mic_Click;
                     button.IsEnabled = true;
@@ -380,15 +379,13 @@ namespace InteractiveTool
                     }
                     if (selectstatus[i])
                     {
-
                         checkBox.IsChecked = true;
-                        checkBox.BorderThickness = new Thickness(0);
-
-                     
+                        checkBox.Style = this.FindResource("CheckBoxIsCheckedStyle") as Style;
                     }
                     else
                     {
-
+                        checkBox.IsChecked = false;
+                        checkBox.Style = this.FindResource("CheckBoxNotCheckedStyle") as Style;
                     }
                     subview.Children.Add(checkBox);
                     subview.Children.Add(button);
@@ -433,28 +430,38 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void interactionCb_Click(object sender, RoutedEventArgs e)
         {
-
             CheckBox check = sender as CheckBox;
-            for (int i = 0; i < classroomnum; i++)
+            try
             {
-                if (check.Name == ("cb_" + i))
+                this.Dispatcher.Invoke(() =>
                 {
-                    if (check.IsChecked == true)
+                    for (int i = 0; i < classroomnum; i++)
                     {
-                        selectStatus[i] = true;
-                        //subview.Children[2 * i + 1].IsEnabled = false;
-                        break;
+                        if (check.Name == ("cb_" + i))
+                        {
+                            if (check.IsChecked == true)
+                            {
+                                selectStatus[i] = true;
+                                check.Style = this.FindResource("CheckBoxIsCheckedStyle") as Style;
+                                //subview.Children[2 * i + 1].IsEnabled = false;
+                                break;
+                            }
+                            else
+                            {
+                                selectStatus[i] = false;
+                                check.Style = this.FindResource("CheckBoxNotCheckedStyle") as Style;
+                                //subview.Children[2 * i + 1].IsEnabled = true;
+                                Update_interaction_info(1, interactionID);
+                                break;
+                            }
+                        }
                     }
-                    else
-                    {
-                        selectStatus[i] = false;
-                        //subview.Children[2 * i + 1].IsEnabled = true;
-                        Update_interaction_info(1, interactionID);
-                        break;
-                    }
-                }
+                });
             }
-          
+            catch (Exception ex)
+            {
+                MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n"+$"错误栈:{ex.StackTrace}");
+            }
         }
 
 
@@ -470,7 +477,7 @@ namespace InteractiveTool
             {
 
                 Button bt_mic = sender as Button;
-               
+
                 this.Dispatcher.Invoke(() =>
                 {
                     for (int i = 0; i < classroomnum; i++)
@@ -522,7 +529,7 @@ namespace InteractiveTool
         {
             this.Dispatcher.Invoke(() =>
             {
-              
+
                 if (InteractionWindowsExit() != null)
                 {
                     InteractionWindowsExit().Topmost = true;
@@ -598,7 +605,7 @@ namespace InteractiveTool
                     {
                         Ctrl_Interaction_Mute(deviceIds[i], 0);
                     }
-                    
+
                 }
             }
             catch (Exception ex)
@@ -607,7 +614,7 @@ namespace InteractiveTool
             }
             finally
             {
-               
+
                 if (InteractionWindowsExit() != null)
                 {
                     InteractionWindowsExit().Topmost = true;

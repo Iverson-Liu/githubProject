@@ -47,7 +47,7 @@ namespace ConfigTools
                 //WriteRegister();
                 AutoStartUp auto = new AutoStartUp("InteractiveTool.exe");
                 auto.SetMeAutoStart();
-                MessageBoxResult result = MessageBox.Show("配置完成,需要重启生效.是否立即重启", "结束", MessageBoxButton.YesNo);
+                MessageBoxResult result = MessageBox.Show("配置完成,需要重启生效.是否立即重启", "", MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.Yes)
                 {
                     ReStart();
