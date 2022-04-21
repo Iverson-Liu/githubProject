@@ -23,7 +23,7 @@ using System.Threading;
 using System.Windows.Threading;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
-
+using NLog;
 namespace InteractiveTool
 {
     /// <summary>
@@ -39,29 +39,25 @@ namespace InteractiveTool
         public static string curriculumName;//查询当前课程名
         public static bool showstatus = true;
         public static string MainDeviceId;
-
-
+        public static Logger logger = LogManager.GetCurrentClassLogger();
 
         static double top = 0;
         static double left = 0;
-
 
         DispatcherTimer timer = null;
         DispatcherTimer hideTimer = null;
 
         ISubscriber sub;
 
-
         public InteractionToolWindow()
         {
-
             IP = ReadConfig("ServerIp");
             Port = ReadConfig("ServerPort");
             Mac = ReadConfig("ServerMac");
             if (!ConfigEmpty())
             {
-                MessageBox.Show("配置文件中存在相关配置缺失", "警告");
-
+                MessageBox.Show("配置文件中存在相关配置缺失,请配置完成后重新启动", "警告");
+                logger.Error("配置文件错误,需要重启");
                 this.Close();
             }
 
@@ -78,21 +74,7 @@ namespace InteractiveTool
             subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
         }
 
-        //public void ProcessOnly()
-        //{
-        //    string test = Process.GetCurrentProcess().ProcessName;
-        //    int instanceNum = RunningInstance(Process.GetCurrentProcess().ProcessName);
-        //    if (instanceNum > 1)
-        //    {
-
-        //        Process[] other = Process.GetProcessesByName(test);
-
-        //        for (int i = 1; i < other.Length; i++)
-        //        {
-        //            other[i].Kill();
-        //        }
-        //    }
-        //}
+     
 
         /// <summary>
         /// 收起工具栏定时
@@ -184,6 +166,7 @@ namespace InteractiveTool
                     JProperty[] messages = jProperties.ToArray();
                     for (int i = 0; i < messages.Length; i++)
                     {
+                        logger.Info($"[{messages[i].Name}]:{messages[i].Value.ToString()}");
                         if (messages[i].Name == "listenerId")
                         {
                             redisListenerId = messages[i].Value.ToString();
@@ -282,7 +265,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Redis推送异常\n" + $"异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
+                logger.Error("Redis客户端异常\n"+$"异常信息:{ex.Message}\n"+$"异常栈:{ex.StackTrace}");
+                MessageBox.Show("Redis推送信息异常\n" + $"异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
             }
         }
 
@@ -316,7 +300,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("异常信息" + "请检查配置文件 " + ex.Message + " " + ex.StackTrace);
+                MessageBox.Show("请检查配置文件 \n" + ex.Message + "\n" + ex.StackTrace, "异常信息");
+                logger.Error($"错误信息:{ex.Message}\n 错误栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -340,6 +325,10 @@ namespace InteractiveTool
                     string context = string.Empty;
                     WebRequest request = WebRequest.Create(url);
                     request.Method = method;
+                    if (method.Equals(WebRequestMethods.Http.Post))
+                    {
+                        logger.Info($"Request:{url}/{param}");
+                    }
 
                     if (method.Equals(WebRequestMethods.Http.Post))
                     {
@@ -377,6 +366,7 @@ namespace InteractiveTool
 
                     IEnumerable<JProperty> properties = json.Properties();
                     JProperty[] list = properties.ToArray();
+                    logger.Info(string.Join(";", properties));
                     for (int i = 0; i < list.Length; i++)
                     {
                         if (list[i].Name == "code")
@@ -427,6 +417,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
                 if (!string.IsNullOrEmpty(requesttime))
                 {
                     MessageBox.Show($"请求异常!ts:{requesttime}" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
@@ -449,7 +440,7 @@ namespace InteractiveTool
             {
                 JObject data = new JObject();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
-                //string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac="+"92-0F-0C-2E-C6-39";
+
 
                 IssueRequest(url, string.Empty, "GET", ref data);
                 if (data != null)
@@ -481,6 +472,7 @@ namespace InteractiveTool
                             curriculumName = list[i].Value.ToString();
                         }
                     }
+                    logger.Info($"开始上课\n" + $"课堂信息:{curriculumName},互动ID:{interactionId}");
                 }
                 else
                 {
@@ -499,8 +491,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "异常信息");
-
+                logger.Error($"获取课堂信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"获取课堂信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}", "异常信息");
             }
         }
 
@@ -517,7 +509,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("服务未启动或服务数据有问题" + " " + ex.Message + " " + ex.StackTrace);
+                logger.Error("状态设置异常\n 异常信息:" + " " + ex.Message + "\n 异常栈:" + ex.StackTrace);
+                MessageBox.Show("状态设置异常\n 异常信息:" + " " + ex.Message + "\n 异常栈:" + ex.StackTrace);
                 return false;
             }
         }
@@ -532,11 +525,6 @@ namespace InteractiveTool
                     + "\"" + "deviceId" + "\"" + ":" + "\"" + MainDeviceId + "\"" + ","
                     + "\"" + "ctrlMute" + "\"" + ":" + ctrlMute.ToString() + ","
                     + "\"" + "bSpeaker" + "\"" + ":" + bSpeaker.ToString() + "}";
-
-                //string param = @"{""interactionId""" + ":" + "\"" + "598076" + "\"" + ","
-                //    + "\"" + "deviceId" + "\"" + ":" + "\"" + "35001" + "\"" + ","
-                //    + "\"" + "ctrlMute" + "\"" + ":" + ctrlMute.ToString() + ","
-                //    + "\"" + "bSpeaker" + "\"" + ":" + bSpeaker.ToString() + "}";
 
                 IssueRequest(url, param, "POST", ref data);
 
@@ -701,12 +689,7 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void interactionMode_Click(object sender, RoutedEventArgs e)
         {
-            //int interMode = 2;
-            //bool result = Update_interaction_info(interMode, interactionId);
-            //if (!result)
-            //{
-            //    MessageBox.Show("互动听讲请求失败", "提示");
-            //}
+
             this.Dispatcher.Invoke(() =>
             {
                 interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
@@ -768,6 +751,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                logger.Error($"全员静音或者取消全员静音失败\n" + $"异常信息:{ex.Message}" + $"异常栈:{ex.StackTrace}");
                 MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
             }
         }
@@ -801,21 +785,31 @@ namespace InteractiveTool
 
         private void end_Click(object sender, RoutedEventArgs e)
         {
-
-            if (!string.IsNullOrEmpty(interactionId))
+            try
             {
-                this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
+                if (!string.IsNullOrEmpty(interactionId))
                 {
-                    Class_End();
-                });
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
+                    {
+                        Class_End();
+                    });
+                }
             }
-            if (SelectWindowsExit() != null)
+            catch (Exception ex)
             {
-                SelectWindowsExit().Close();
+                logger.Error("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                MessageBox.Show("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
             }
-            this.Visibility = Visibility.Hidden;
-            this.Hide();
-            StartTimer();
+            finally
+            {
+                if (SelectWindowsExit() != null)
+                {
+                    SelectWindowsExit().Close();
+                }
+                this.Visibility = Visibility.Hidden;
+                this.Hide();
+                StartTimer();
+            }
         }
 
         private void ToolView_MouseEnter(object sender, MouseEventArgs e)

@@ -223,8 +223,6 @@ namespace InteractiveTool
                 JObject data = new JObject();
                 JArray array = new JArray();
 
-                //string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/devices_info?interactionId=" + "598076";
-
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/devices_info?interactionId=" + interactionID;
                 IssueRequest(url, string.Empty, "GET", ref data, ref array);
                 //if (data != null)
@@ -411,9 +409,6 @@ namespace InteractiveTool
                 JArray array = new JArray();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/mute_listener";
 
-
-                //string param = @"{""interactionId""" + ":" + "598076" + "," + "\"" + "deviceId" + "\"" + ":" + "\"" + deviceid + "\"" + "," + "\"" + "ctrlMute" + "\"" + ":" + ctrlmute.ToString() + "}";
-
                 string param = @"{""interactionId""" + ":" + "\"" + interactionID + "\"" + "," + "\"" + "deviceId" + "\"" + ":" + "\"" + deviceid + "\"" + "," + "\"" + "ctrlMute" + "\"" + ":" + ctrlmute.ToString() + "}";
                 IssueRequest(url, param, "POST", ref data, ref array);
             }
@@ -451,7 +446,8 @@ namespace InteractiveTool
                                 selectStatus[i] = false;
                                 check.Style = this.FindResource("CheckBoxNotCheckedStyle") as Style;
                                 //subview.Children[2 * i + 1].IsEnabled = true;
-                                Update_interaction_info(1, interactionID);
+                                //先切换到授课模式,取消所有静音  (目前按照新逻辑注释掉)
+                                //Update_interaction_info(1, interactionID);
                                 break;
                             }
                         }
@@ -460,7 +456,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n"+$"错误栈:{ex.StackTrace}");
+                MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n" + $"错误栈:{ex.StackTrace}");
             }
         }
 
@@ -645,8 +641,6 @@ namespace InteractiveTool
                 MessageBox.Show("设置听讲端互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
             }
         }
-
-
 
         private void SelectView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
