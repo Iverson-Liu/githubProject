@@ -200,6 +200,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"选择听讲端接口请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 if (string.IsNullOrEmpty(requesttime))
                 {
                     MessageBox.Show($"请求异常!ts:{requesttime}" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
@@ -224,24 +225,8 @@ namespace InteractiveTool
                 JArray array = new JArray();
 
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/devices_info?interactionId=" + interactionID;
+                InteractionToolWindow.logger.Info($"获取课堂信息请求发送,Url:{url}");
                 IssueRequest(url, string.Empty, "GET", ref data, ref array);
-                //if (data != null)
-                //{
-                //    IEnumerable<JProperty> jProperties = data.Properties();
-                //    JProperty[] list = jProperties.ToArray();
-                //    for (int j = 0; j < list.Length; j++)
-                //    {
-                //        if (list[j].Name == "deviceId")
-                //        {
-                //            deviceIds.Add(list[j].Value.ToString());
-                //        }
-                //        if (list[j].Name == "deviceName")
-                //        {
-                //            deviceNames.Add(list[j].Value.ToString());
-                //        }
-                //    }
-                //    Add_Control(0, deviceNames[0]);
-                //}
 
                 if (array != null)
                 {
@@ -253,6 +238,8 @@ namespace InteractiveTool
                         JObject datas = JObject.Parse(context);
                         IEnumerable<JProperty> properties = datas.Properties();
                         JProperty[] list = properties.ToArray();
+                        //打印课堂信息
+                        InteractionToolWindow.logger.Info($"课堂信息:{string.Join("/",properties)}");
                         bool ifMainDevice = false;
                         for (int t = 0; t < list.Length; t++)
                         {
@@ -322,6 +309,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"获取课堂设备信息请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"获取听讲设备异常,互动ID为:{interactionID},异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
             }
         }
@@ -391,6 +379,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"选择听讲端增加设备信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show("听讲端设备信息冲突\n" + $"异常信息;{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
                 throw ex;
             }
@@ -414,6 +403,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"主讲端单独设置听讲端设备静音失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 //MessageBox.Show($"听讲端静音请求失败,设备id:{deviceid}\n" + $"异常分析:{ex.Message}");
                 throw ex;
             }
@@ -456,6 +446,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"选中互动设备或取消选中互动设备异常\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n" + $"错误栈:{ex.StackTrace}");
             }
         }
@@ -483,14 +474,16 @@ namespace InteractiveTool
                             listenerId = deviceIds[i];
                             if (slienceIf[i] == false)
                             {
-                                Ctrl_Interaction_Mute(deviceIds[i], 1);
+                                /*静音或者取消静音功能放到确定按键里去做,此处之记录对应设备静音状态,确定按键中根据此处记录的状态信息去设置静音接参数
+                                 */
+                                //Ctrl_Interaction_Mute(deviceIds[i], 1);
                                 bt_mic.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/images/micCancel.png")));
                                 slienceIf[i] = true;
                                 return;
                             }
                             else
                             {
-                                Ctrl_Interaction_Mute(deviceIds[i], 0);
+                                //Ctrl_Interaction_Mute(deviceIds[i], 0);
                                 bt_mic.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/images/mic.png")));
                                 slienceIf[i] = false;
                                 return;
@@ -502,7 +495,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("静音或取消静音请求发送失败\n" + $"设备ID:{listenerId}");
+                InteractionToolWindow.logger.Error($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
             }
         }
 
@@ -604,8 +598,10 @@ namespace InteractiveTool
 
                 }
             }
+
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show("互动请求失败\n" + "错误信息" + ex.Message);
             }
             finally
@@ -631,13 +627,13 @@ namespace InteractiveTool
                 JArray array = new JArray();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/set_interaction";
 
-                //string param = @"{""interactionId""" + ":" + "598076" + "," + "\"" + "deviceId" + "\"" + ":" + "\"" + deviceId + "\"" + "}";
-
                 string param = @"{""interactionId""" + ":" + interactionID.ToString() + "," + "\"" + "deviceId" + "\"" + ":" + "\"" + deviceId + "\"" + "}";
+                InteractionToolWindow.logger.Info($"主讲端选择听讲端互动请求: Url:{url}\n param:{param}");
                 IssueRequest(url, param, "POST", ref data, ref array);
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端请求失败\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
                 MessageBox.Show("设置听讲端互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
             }
         }

@@ -34,6 +34,7 @@ namespace InteractiveTool
         static List<string> InteractiveDeviceId = new List<string>();
         DispatcherTimer timer = null;
 
+        ///还有一种写法,构造函数传入主窗口对象,主窗口new的时候传入this
         public TipTools(string Message, string ip, string port, string interactionId, string deviceId)
         {
             if (SelectWindowsExit() != null)
@@ -84,6 +85,18 @@ namespace InteractiveTool
             }
             return null;
         }
+
+
+        public Window InteractionWindowsExit()
+        {
+            foreach (Window item in Application.Current.Windows)
+            {
+                if (item is InteractionToolWindow)
+                    return item;
+            }
+            return null;
+        }
+
         public void IssueRequest(string url, string param, string method, ref JObject unprocessedValue, ref JArray unprocessArray)
         {
             string requesttime = string.Empty;
@@ -187,6 +200,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"申请加入课堂请求异常\n 异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
                 if (string.IsNullOrEmpty(requesttime))
                 {
                     MessageBox.Show($"请求异常!ts:{requesttime}" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
@@ -214,10 +228,9 @@ namespace InteractiveTool
 
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/devices_info?interactionId=" + InteractionId;
                 IssueRequest(url, string.Empty, "GET", ref data, ref array);
-
+                InteractionToolWindow.logger.Info($"Request:{url}");
                 if (array != null)
                 {
-
                     for (int i = 0; i < array.Count; i++)
                     {
                         JToken jToken = array[i].ToString();
@@ -249,12 +262,14 @@ namespace InteractiveTool
                             }
                         }
                     }
+                    InteractionToolWindow.logger.Info($"互动课堂信息{string.Join("/", InteractiveDeviceId)}");
                 }
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"获取听讲设备异常,互动ID为:{InteractionId},异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"听讲端申请加入课堂时,获取听讲端设备信息请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"听讲端申请加入课堂时获取听讲设备异常\n 互动ID为:{InteractionId},异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -274,7 +289,9 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("设置听讲端互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
+                InteractionToolWindow.logger.Error($"申请加入互动时,发送主讲端选择听讲端互动请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show("听讲端申请加入互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
+                throw ex;
             }
         }
 
@@ -291,8 +308,9 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("切换当前模式为互动模式请求失败\n" + "错误信息:" + ex.Message + "\n 错误栈:" + ex.StackTrace, "异常");
-                return false;
+                InteractionToolWindow.logger.Error($"申请加入互动时,发送将当前模式切换为互动模式请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show("听讲端申请加入互动后刷新互动模式请求失败\n" + "错误信息:" + ex.Message + "\n 错误栈:" + ex.StackTrace, "异常");
+                throw ex;
             }
         }
         public void Tips_Closing(object sender, System.ComponentModel.CancelEventArgs args)
@@ -307,8 +325,18 @@ namespace InteractiveTool
 
         private void disagree_Click(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                InteractionToolWindow.logger.Info($"拒绝{message.Text}请求");
+            }
+            catch (Exception ex)
+            {
 
-            this.Close();
+            }
+            finally
+            {
+                this.Close();
+            }
         }
 
         private void agree_Click(object sender, RoutedEventArgs e)
@@ -345,14 +373,22 @@ namespace InteractiveTool
                     Thread.Sleep(300);
                     Update_interaction_info(2, InteractionId);
                 });
+
+
+                //理论上主窗口界面应该切换到互动模式上去,涉及子窗口与父窗口通讯,先注释掉,接口保留
+                //InteractionToolWindow maintoolwindow = InteractionWindowsExit() as InteractionToolWindow;
+                //if (maintoolwindow!=null)
+                //{
+                //    maintoolwindow.AgreeInteractionModeSelect();
+                //}
             }
             catch (Exception ex)
             {
+                InteractionToolWindow.logger.Error($"申请加入互动失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"加入互动失败\n 异常信息:{ex.Message}");
             }
             finally
             {
-
                 this.Close();
             }
         }

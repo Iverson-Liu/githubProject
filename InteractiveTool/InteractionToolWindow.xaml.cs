@@ -37,9 +37,10 @@ namespace InteractiveTool
         public static string Url;
         public static string interactionId;//查询当前互动ID
         public static string curriculumName;//查询当前课程名
-        public static bool showstatus = true;
+        public static bool showstatus = false;
         public static string MainDeviceId;
         public static Logger logger = LogManager.GetCurrentClassLogger();
+     
 
         static double top = 0;
         static double left = 0;
@@ -63,18 +64,18 @@ namespace InteractiveTool
 
             InitTimer();
             InitHideTimer();
-            FindCurriculum();
-
+            this.Visibility = Visibility.Hidden;
             RedisClient();
             InitializeComponent();
-
+            HideToolView();
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
+            FindCurriculum();
             SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
             subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
         }
 
-     
+       
 
         /// <summary>
         /// 收起工具栏定时
@@ -156,6 +157,7 @@ namespace InteractiveTool
 
                 sub.Subscribe("listen_apply_interaction_channel", (channel, message) =>
                 {
+                   
                     string redisInteractionId = string.Empty;
                     string redisDeviceId = string.Empty;//主讲设备ID
                     string redisListenerId = string.Empty;//听讲设备ID
@@ -221,7 +223,9 @@ namespace InteractiveTool
                             }
                         });
                     }
+                    
                 });
+               
                 bool subsuccess = sub.IsConnected("listen_apply_interaction_channel");
                 if (subsuccess)
                 {
@@ -424,7 +428,7 @@ namespace InteractiveTool
                 }
                 else
                 {
-                    MessageBox.Show("请求异常!" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
+                    MessageBox.Show("服务器未响应或请求异常!" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 throw ex;
             }
@@ -438,6 +442,7 @@ namespace InteractiveTool
         {
             try
             {
+                
                 JObject data = new JObject();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
 
@@ -454,6 +459,7 @@ namespace InteractiveTool
                         this.Show();
                         if (showstatus == false)
                         {
+                            this.Visibility = Visibility.Visible;
                             this.Topmost = true;
                             ShowToolView();
                         }
@@ -682,6 +688,20 @@ namespace InteractiveTool
             });
         }
 
+        public void AgreeInteractionModeSelect()
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
+                interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
+                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                teachingBtTxt.Foreground = Brushes.AliceBlue;
+                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                discussingBtTxt.Foreground = Brushes.AliceBlue;
+            });
+        }
+
+
         /// <summary>
         /// 互动听讲按键处理
         /// </summary>
@@ -741,12 +761,12 @@ namespace InteractiveTool
                             slienceBtTxt.Text = "全员静音";
                         }
                     }
-                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                    teachingBtTxt.Foreground = Brushes.AliceBlue;
-                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                    discussingBtTxt.Foreground = Brushes.AliceBlue;
-                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                    interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    //teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                    //teachingBtTxt.Foreground = Brushes.AliceBlue;
+                    //discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                    //discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    //interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                    //interactionBtTxt.Foreground = Brushes.AliceBlue;
                 });
             }
             catch (Exception ex)
