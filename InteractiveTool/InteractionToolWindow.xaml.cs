@@ -38,9 +38,9 @@ namespace InteractiveTool
         public static string interactionId;//查询当前互动ID
         public static string curriculumName;//查询当前课程名
         public static bool showstatus = false;
-        public static string MainDeviceId;
+        public static string MainDeviceId;//主讲设备ID
         public static Logger logger = LogManager.GetCurrentClassLogger();
-     
+
 
         static double top = 0;
         static double left = 0;
@@ -75,7 +75,17 @@ namespace InteractiveTool
             subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
         }
 
-       
+        //log文件检测
+        public void LogExist()
+        {
+            if (Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "Logs"))
+            {
+                if (File.Exists(""))
+                {
+
+                }
+            }
+        }
 
         /// <summary>
         /// 收起工具栏定时
@@ -151,24 +161,26 @@ namespace InteractiveTool
                     Password = "zonekeyredis@2019",   //密码
                     AllowAdmin = true     //启用被认定为是有风险的一些命令
                 };
+                logger.Info($"redis链接信息:IP:{IP} Port:6379 密码:zonekeyredis@2019");
                 ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configOptions);
                 sub = redis.GetSubscriber();
                 //给客户端推送有听讲申请互动
-
                 sub.Subscribe("listen_apply_interaction_channel", (channel, message) =>
                 {
-                   
-                    string redisInteractionId = string.Empty;
+                    logger.Info("redis客户端申请加入课堂");
+
+                    string redisInteractionId = string.Empty;//互动ID
                     string redisDeviceId = string.Empty;//主讲设备ID
                     string redisListenerId = string.Empty;//听讲设备ID
                     string redisListenerName = string.Empty;//听讲设备名称
 
                     JObject redisMessage = JObject.Parse(message);
                     IEnumerable<JProperty> jProperties = redisMessage.Properties();
+                    logger.Info($"频道listen_apply_interaction_channel推送消息\n 消息信息:{string.Join("/", jProperties)}");
                     JProperty[] messages = jProperties.ToArray();
                     for (int i = 0; i < messages.Length; i++)
                     {
-                        logger.Info($"[{messages[i].Name}]:{messages[i].Value.ToString()}");
+
                         if (messages[i].Name == "listenerId")
                         {
                             redisListenerId = messages[i].Value.ToString();
@@ -190,10 +202,11 @@ namespace InteractiveTool
                     //{
                     //    this.Show();
                     //}
-                    if (!string.IsNullOrEmpty(redisListenerName))
+                    if (!string.IsNullOrEmpty(redisListenerName) && redisDeviceId == MainDeviceId && redisInteractionId == interactionId)
                     {
                         this.Dispatcher.Invoke(() =>
                         {
+                            logger.Info($"有新设备申请加入互动,互动设备名称:{redisListenerName}");
                             Window tip = new Window();
                             bool istop = true;
                             if (TipWindowsExit() != null)
@@ -223,9 +236,9 @@ namespace InteractiveTool
                             }
                         });
                     }
-                    
+
                 });
-               
+
                 bool subsuccess = sub.IsConnected("listen_apply_interaction_channel");
                 if (subsuccess)
                 {
@@ -237,11 +250,16 @@ namespace InteractiveTool
                         JObject redisMessage = JObject.Parse(message);
                         IEnumerable<JProperty> jProperties = redisMessage.Properties();
                         JProperty[] messages = jProperties.ToArray();
+                        logger.Info($"频道:interaction_end_channel推送消息\n 消息信息:{string.Join("/", jProperties)}");
                         for (int i = 0; i < messages.Length; i++)
                         {
                             if (messages[i].Name == "interactionId")
                             {
                                 redisinteractionId = messages[i].Value.ToString();
+                            }
+                            if (messages[i].Name == "deviceId")
+                            {
+                                redisdeviceId = messages[i].Value.ToString();
                             }
                             if (messages[i].Name == "bStart")
                             {
@@ -257,11 +275,12 @@ namespace InteractiveTool
                         }
                         this.Dispatcher.Invoke(() =>
                         {
-                            if (classend == true)
+                            if (classend == true && redisinteractionId == interactionId && redisdeviceId == MainDeviceId)
                             {
+                                logger.Info("redis客户端发送结束信息,工具栏后台隐藏");
                                 this.Visibility = Visibility.Hidden;
                                 this.Hide();
-                                timer.Start();
+                                StartTimer();
                             }
                         });
                     });
@@ -269,7 +288,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error("Redis客户端异常\n"+$"异常信息:{ex.Message}\n"+$"异常栈:{ex.StackTrace}");
+                logger.Error("Redis客户端异常\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
                 MessageBox.Show("Redis推送信息异常\n" + $"异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
             }
         }
@@ -305,7 +324,7 @@ namespace InteractiveTool
             catch (Exception ex)
             {
                 MessageBox.Show("请检查配置文件 \n" + ex.Message + "\n" + ex.StackTrace, "异常信息");
-                logger.Error($"错误信息:{ex.Message}\n 错误栈:{ex.StackTrace}");
+                logger.Error($"配置文件读取错误\n 错误信息:{ex.Message}\n 错误栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -369,8 +388,8 @@ namespace InteractiveTool
                     //对象组成的数组，可以遍历和获得value的值
 
                     IEnumerable<JProperty> properties = json.Properties();
-                    JProperty[] list = properties.ToArray();
                     logger.Info(string.Join(";", properties));
+                    JProperty[] list = properties.ToArray();
                     for (int i = 0; i < list.Length; i++)
                     {
                         if (list[i].Name == "code")
@@ -424,16 +443,36 @@ namespace InteractiveTool
                 logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
                 if (!string.IsNullOrEmpty(requesttime))
                 {
+                    logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
                     MessageBox.Show($"请求异常!ts:{requesttime}" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 else
                 {
-                    MessageBox.Show("服务器未响应或请求异常!" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
+                    logger.Error($"服务器未响应或请求异常!" + Environment.NewLine + "异常信息: " + ex.Message + Environment.NewLine);
+                    //MessageBox.Show("服务器未响应或请求异常!" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 throw ex;
             }
         }
 
+        /// <summary>
+        /// 后台展示到前台时,重置所有按键状态
+        /// </summary>
+        public void AllSelectStatusCancel()
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                logger.Info("后台展示到前台重新初始化界面");
+                slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                slienceBtTxt.Text = "全员静音";
+                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                teachingBtTxt.Foreground = Brushes.AliceBlue;
+                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                discussingBtTxt.Foreground = Brushes.AliceBlue;
+                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                interactionBtTxt.Foreground = Brushes.AliceBlue;
+            });
+        }
 
         /// <summary>
         /// 查询当前课表
@@ -442,14 +481,14 @@ namespace InteractiveTool
         {
             try
             {
-                
+
                 JObject data = new JObject();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
-
 
                 IssueRequest(url, string.Empty, "GET", ref data);
                 if (data != null)
                 {
+                    StopTimer();
                     if (this.Visibility == Visibility.Hidden)
                     {
                         this.Visibility = Visibility.Visible;
@@ -462,9 +501,9 @@ namespace InteractiveTool
                             this.Visibility = Visibility.Visible;
                             this.Topmost = true;
                             ShowToolView();
+                            AllSelectStatusCancel();
                         }
                     }
-                    StopTimer();
                     IEnumerable<JProperty> properties = data.Properties();
                     JProperty[] list = properties.ToArray();
                     for (int i = 0; i < list.Length; i++)
@@ -477,8 +516,12 @@ namespace InteractiveTool
                         {
                             curriculumName = list[i].Value.ToString();
                         }
+                        if (list[i].Name == "speakerDeviceId")
+                        {
+                            MainDeviceId = list[i].Value.ToString();
+                        }
                     }
-                    logger.Info($"开始上课\n" + $"课堂信息:{curriculumName},互动ID:{interactionId}");
+                    logger.Info($"开始上课\n" + $"课堂信息:{curriculumName},互动ID:{interactionId},主讲设备ID:{MainDeviceId}");
                 }
                 else
                 {
@@ -488,6 +531,7 @@ namespace InteractiveTool
                     }
                     if (this.Visibility == Visibility.Visible)
                     {
+                        logger.Warn($"当前设备无课程信息,工具栏后台隐藏");
                         this.Visibility = Visibility.Hidden;
                         this.Hide();
                     }
@@ -549,7 +593,7 @@ namespace InteractiveTool
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/over_class";
                 string param = @"{""interactionId""" + ":" + "\"" + interactionId.ToString() + "\"" + ","
                     + "\"" + "deviceId" + "\"" + ":" + "\"" + MainDeviceId + "\"" + "}";
-
+                logger.Info($"发送课堂结束请求\n URL:{url}\n param:{param}");
                 //string param = @"{""interactionId""" + ":" + "\"" + "598076" + "\"" + ","
                 //   + "\"" + "deviceId" + "\"" + ":" + "\"" + 35001 + "\"" + "}";
                 IssueRequest(url, param, "POST", ref data);
@@ -569,16 +613,20 @@ namespace InteractiveTool
                 ToolView.Width = 584;
                 ToolView.Height = 64;
                 expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);
-                MainView.Visibility = Visibility.Visible;
-                ToolView.ColumnDefinitions.Add(show);
-                ToolView.Children.Add(MainView);
-                line.Visibility = Visibility.Visible;
-                expandergd.ColumnDefinitions.Add(spline);
-                expandergd.Children.Add(line);
-                expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
-                var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                this.Left = (0.5 * desktopWorkingArea.Right) - 250;
-                MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
+                if (MainView.Visibility == Visibility.Hidden)
+                {
+                    MainView.Visibility = Visibility.Visible;
+                    ToolView.ColumnDefinitions.Add(show);
+                    ToolView.Children.Add(MainView);
+                    line.Visibility = Visibility.Visible;
+                    expandergd.ColumnDefinitions.Add(spline);
+                    expandergd.Children.Add(line);
+                    expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
+                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                    this.Left = (0.5 * desktopWorkingArea.Right) - 250;
+                    MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
+                    logger.Warn("工具栏展开");
+                }
             });
         }
         public void HideToolView()
@@ -592,18 +640,21 @@ namespace InteractiveTool
                 }
                 ToolView.Width = 68;
                 ToolView.Height = 50;
-
-                MainView.Visibility = Visibility.Hidden;
-                ToolView.Children.Remove(MainView);
-                ToolView.ColumnDefinitions.Remove(show);
-                line.Visibility = Visibility.Hidden;
-                expandergd.Children.Remove(line);
-                expandergd.ColumnDefinitions.Remove(spline);
-                expanderbd.CornerRadius = new CornerRadius(25, 25, 0, 0);
-                expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/unfold.png"));
-                var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height;
-                StopHideTimer();
+                if (MainView.Visibility == Visibility.Visible)
+                {
+                    MainView.Visibility = Visibility.Hidden;
+                    ToolView.Children.Remove(MainView);
+                    ToolView.ColumnDefinitions.Remove(show);
+                    line.Visibility = Visibility.Hidden;
+                    expandergd.Children.Remove(line);
+                    expandergd.ColumnDefinitions.Remove(spline);
+                    expanderbd.CornerRadius = new CornerRadius(25, 25, 0, 0);
+                    expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/unfold.png"));
+                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                    MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height;
+                    logger.Warn("工具栏收起");
+                    StopHideTimer();
+                }
             });
         }
 
@@ -822,6 +873,7 @@ namespace InteractiveTool
             }
             finally
             {
+                logger.Warn("课堂结束按键点击,工具后台隐藏");
                 if (SelectWindowsExit() != null)
                 {
                     SelectWindowsExit().Close();

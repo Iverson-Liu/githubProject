@@ -67,6 +67,7 @@ namespace InteractiveTool
         }
         public void DataTime_Tick(object sender, EventArgs e)
         {
+            InteractionToolWindow.logger.Info($"30s未处理{message.Text}请求");
             this.Close();
         }
         public void StartTimer()
@@ -345,6 +346,7 @@ namespace InteractiveTool
             {
                 this.Dispatcher.Invoke(() =>
                 {
+                    InteractionToolWindow.logger.Info($"同意{message.Text}请求");
                     Get_device_info();
                     string deviceid = string.Empty;
                     if (InteractiveDeviceId.Count != 0 || InteractiveDeviceId != null)

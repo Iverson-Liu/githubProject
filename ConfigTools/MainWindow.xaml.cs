@@ -26,6 +26,7 @@ namespace ConfigTools
     {
         public MainWindow()
         {
+            //初始化
             InitializeComponent();
         }
 

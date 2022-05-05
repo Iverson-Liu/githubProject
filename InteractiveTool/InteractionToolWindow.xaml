@@ -23,14 +23,14 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    
-        <Grid   x:Name="ToolView" Width="586" Height="64" MouseLeftButtonDown="ToolView_MouseLeftButtonDown">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="68"/>
-                <ColumnDefinition  x:Name="show"/>
-            </Grid.ColumnDefinitions>
+
+    <Grid   x:Name="ToolView" Width="586" Height="64" MouseLeave="ToolView_MouseLeave" MouseEnter="ToolView_MouseEnter" MouseLeftButtonDown="ToolView_MouseLeftButtonDown">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="68"/>
+            <ColumnDefinition  x:Name="show"/>
+        </Grid.ColumnDefinitions>
         <Border x:Name="expanderbd" Background="#111214" Grid.Column="0" CornerRadius="6,0,0,6">
-        <Grid  x:Name="expandergd">
+            <Grid  x:Name="expandergd">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="10*"/>
                     <ColumnDefinition x:Name="spline"/>
@@ -45,9 +45,9 @@
                 </StackPanel>
             </Grid>
         </Border>
-            
-        <Border x:Name="MainView" Background="#111214" Grid.Column="1" Visibility="Visible"  MouseEnter="ToolView_MouseEnter" MouseLeave="ToolView_MouseLeave" CornerRadius="0,6,6,0">
-        <Grid >
+
+        <Border x:Name="MainView" Background="#111214" Grid.Column="1" Visibility="Visible"    CornerRadius="0,6,6,0">
+            <Grid >
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -89,11 +89,11 @@
                 </Button>
                 <Border Grid.Column="4" Width="112" Height="40" Background="#FF4D4F" CornerRadius="4">
                     <Button Style="{DynamicResource OverClassButtonStyle}" Width="100" Height="40"  x:Name="end" Click="end_Click" Content="结束互动" FontSize="16" Foreground="White" Background="#FF4D4F">
-                </Button>
+                    </Button>
                 </Border>
             </Grid>
         </Border>
-            
+
     </Grid>
-  
+
 </Window>
