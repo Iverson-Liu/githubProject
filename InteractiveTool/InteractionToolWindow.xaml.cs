@@ -40,7 +40,7 @@ namespace InteractiveTool
         public static bool showstatus = false;
         public static string MainDeviceId;//主讲设备ID
         public static Logger logger = LogManager.GetCurrentClassLogger();
-
+        public static string redisconnectmessage;
 
         static double top = 0;
         static double left = 0;
@@ -52,6 +52,7 @@ namespace InteractiveTool
 
         public InteractionToolWindow()
         {
+            OldLogDelete();
             IP = ReadConfig("ServerIp");
             Port = ReadConfig("ServerPort");
             Mac = ReadConfig("ServerMac");
@@ -66,7 +67,14 @@ namespace InteractiveTool
             InitHideTimer();
             this.Visibility = Visibility.Hidden;
             RedisClient();
-            InitializeComponent();
+            //初始化时加入redis重连机制
+            while (!string.IsNullOrEmpty(redisconnectmessage))
+            {
+                redisconnectmessage = string.Empty;
+                RedisClient();
+            }
+
+            InitializeComponent();//界面初始化
             HideToolView();
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
@@ -75,15 +83,28 @@ namespace InteractiveTool
             subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
         }
 
-        //log文件检测
-        public void LogExist()
+        //log文件检测,用于定期日志删除(目前定义为删除15之前的程序日志.保证内存空间)
+        public void OldLogDelete()
         {
+            string oldlogMonth = DateTime.Today.AddDays(-15).ToString("yyyy-MM");
+            string oldlogdate = DateTime.Today.AddDays(-15).ToString("yyyy-MM-dd");
+
             if (Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "Logs"))
             {
-                if (File.Exists(""))
+                string path = AppDomain.CurrentDomain.BaseDirectory + "Logs" + "\\" + oldlogMonth;
+                if (Directory.Exists(path))
                 {
-
+                    if (File.Exists($"{path}\\{oldlogdate}.log"))
+                    {
+                        File.Delete($"{path}\\{oldlogdate}.log");
+                    }
+                    string[] logfiles = Directory.GetFiles(path);
+                    if (logfiles.Length==0)
+                    {
+                        Directory.Delete(path);
+                    }
                 }
+
             }
         }
 
@@ -289,14 +310,17 @@ namespace InteractiveTool
             catch (Exception ex)
             {
                 logger.Error("Redis客户端异常\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("Redis推送信息异常\n" + $"异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show("Redis服务链接或推送信息异常\n" + $"异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
+                redisconnectmessage = ex.Message.ToString();
             }
         }
 
-        public void UnSub()
+        //取消所有订阅
+        public void UnSubAllChannel()
         {
             sub.UnsubscribeAll();
         }
+
         public bool ConfigEmpty()
         {
             if (string.IsNullOrEmpty(IP) || string.IsNullOrEmpty(Port) || string.IsNullOrEmpty(Mac))

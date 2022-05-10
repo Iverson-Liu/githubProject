@@ -838,7 +838,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_05916F6BFF1B51541A569FB9EB79A170"
+        "OwnerKey" = "8:_225B0E73530E4C069F20066E329C3969"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -1366,12 +1366,6 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_225B0E73530E4C069F20066E329C3969"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_582BCDE8BFC66B1CD3648DCE560A3755"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -1403,6 +1397,12 @@
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_6FF684989EB70C222B3A8407EFA253E7"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_05916F6BFF1B51541A569FB9EB79A170"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -1497,7 +1497,7 @@
                 {
                 "Name" = "8:.NET Framework"
                 "Message" = "8:[VSDNETMSG]"
-                "FrameworkVersion" = "8:.NETFramework,Version=v4.7.2"
+                "FrameworkVersion" = "8:.NETFramework,Version=v4.6.1"
                 "AllowLaterVersions" = "11:FALSE"
                 "InstallUrl" = "8:http://go.microsoft.com/fwlink/?LinkId=863262"
                 }
@@ -4567,7 +4567,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ZonekeyInteractiveTool"
         "ProductCode" = "8:{311194AF-B854-460C-AA9A-8159A900790D}"
-        "PackageCode" = "8:{7D517270-0533-4394-8FB9-45326C23F7C3}"
+        "PackageCode" = "8:{7F85F08F-8479-4334-95DF-387489B2388C}"
         "UpgradeCode" = "8:{3D52B332-201B-41AE-A13F-F822E675787A}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -4581,7 +4581,6 @@
         "Title" = "8:ZonekeyInteractiveTool"
         "Subject" = "8:"
         "ARPCONTACT" = "8:ZoneKey"
-		
         "Keywords" = "8:"
         "ARPCOMMENTS" = "8:"
         "ARPURLINFOABOUT" = "8:"
