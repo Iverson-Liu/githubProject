@@ -104,7 +104,6 @@ namespace InteractiveTool
                         Directory.Delete(path);
                     }
                 }
-
             }
         }
 
