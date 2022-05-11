@@ -52,7 +52,7 @@ namespace InteractiveTool
 
         public InteractionToolWindow()
         {
-            OldLogDelete();
+            //OldLogDelete();
             IP = ReadConfig("ServerIp");
             Port = ReadConfig("ServerPort");
             Mac = ReadConfig("ServerMac");
@@ -68,11 +68,11 @@ namespace InteractiveTool
             this.Visibility = Visibility.Hidden;
             RedisClient();
             //初始化时加入redis重连机制
-            while (!string.IsNullOrEmpty(redisconnectmessage))
-            {
-                redisconnectmessage = string.Empty;
-                RedisClient();
-            }
+            //while (!string.IsNullOrEmpty(redisconnectmessage))
+            //{
+            //    redisconnectmessage = string.Empty;
+            //    RedisClient();
+            //}
 
             InitializeComponent();//界面初始化
             HideToolView();
@@ -98,12 +98,23 @@ namespace InteractiveTool
                     {
                         File.Delete($"{path}\\{oldlogdate}.log");
                     }
+
                     string[] logfiles = Directory.GetFiles(path);
-                    if (logfiles.Length==0)
+                    //将大于15天以上的日志文件全部删除
+                    for (int i = 0; i < logfiles.Length; i++)
+                    {
+                        string filecreatedate = logfiles[i].Replace(".log", "").Replace($"{path}\\", "");
+                        if (DateTime.Compare(DateTime.Parse(filecreatedate), DateTime.Parse(oldlogdate)) < 0)
+                        {
+                            File.Delete($"{logfiles[i]}");
+                        }
+                    }
+                    if (Directory.GetFiles(path).Length == 0)
                     {
                         Directory.Delete(path);
                     }
                 }
+
             }
         }
 
@@ -638,10 +649,11 @@ namespace InteractiveTool
                 expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);
                 if (MainView.Visibility == Visibility.Hidden)
                 {
+                    ToolView.ColumnDefinitions.Add(show);//增加展示列
+                    //后续可能根据课程信息添加不同的布局界面
                     MainView.Visibility = Visibility.Visible;
-                    ToolView.ColumnDefinitions.Add(show);
-                    ToolView.Children.Add(MainView);
-                    line.Visibility = Visibility.Visible;
+                    ToolView.Children.Add(MainView);//添加展开栏
+                    line.Visibility = Visibility.Visible;//分割线展示
                     expandergd.ColumnDefinitions.Add(spline);
                     expandergd.Children.Add(line);
                     expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
@@ -665,10 +677,11 @@ namespace InteractiveTool
                 ToolView.Height = 50;
                 if (MainView.Visibility == Visibility.Visible)
                 {
-                    MainView.Visibility = Visibility.Hidden;
-                    ToolView.Children.Remove(MainView);
-                    ToolView.ColumnDefinitions.Remove(show);
-                    line.Visibility = Visibility.Hidden;
+                    //后续可能根据课程信息选择不同的布局隐藏
+                    MainView.Visibility = Visibility.Hidden;//隐藏功能栏布局
+                    ToolView.Children.Remove(MainView);//remove展示布局
+                    ToolView.ColumnDefinitions.Remove(show);//隐藏展示列
+                    line.Visibility = Visibility.Hidden;//分割线隐藏
                     expandergd.Children.Remove(line);
                     expandergd.ColumnDefinitions.Remove(spline);
                     expanderbd.CornerRadius = new CornerRadius(25, 25, 0, 0);
@@ -683,7 +696,7 @@ namespace InteractiveTool
 
         public bool ShowOrHide()
         {
-
+            logger.Info("点击展开或收起按键");
             if (MainView.Visibility == Visibility.Visible)
             {
                 HideToolView();
@@ -919,7 +932,7 @@ namespace InteractiveTool
 
         private void ToolView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            this.DragMove();
+            this.DragMove();//窗口拖拽
         }
     }
 }

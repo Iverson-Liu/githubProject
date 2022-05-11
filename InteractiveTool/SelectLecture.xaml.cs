@@ -640,7 +640,7 @@ namespace InteractiveTool
 
         private void SelectView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            this.DragMove();
+            this.DragMove();//子窗口拖拽
         }
     }
 }
