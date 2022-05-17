@@ -239,7 +239,7 @@ namespace InteractiveTool
                         IEnumerable<JProperty> properties = datas.Properties();
                         JProperty[] list = properties.ToArray();
                         //打印课堂信息
-                        InteractionToolWindow.logger.Info($"课堂信息:{string.Join("/",properties)}");
+                        InteractionToolWindow.logger.Info($"课堂信息:{string.Join("/", properties)}");
                         bool ifMainDevice = false;
                         for (int t = 0; t < list.Length; t++)
                         {
@@ -560,43 +560,46 @@ namespace InteractiveTool
         {
             try
             {
-                string selectdeviceId = string.Empty;
-
-                for (int i = 0; i < selectStatus.Count; i++)
+                this.Dispatcher.BeginInvoke((Action)delegate
                 {
-                    if (selectStatus[i])
+                    string selectdeviceId = string.Empty;
+
+                    for (int i = 0; i < selectStatus.Count; i++)
                     {
-                        if (string.IsNullOrEmpty(selectdeviceId))
+                        if (selectStatus[i])
                         {
-                            selectdeviceId += deviceIds[i];
+                            if (string.IsNullOrEmpty(selectdeviceId))
+                            {
+                                selectdeviceId += deviceIds[i];
+                            }
+                            else
+                            {
+                                selectdeviceId += "/" + deviceIds[i];
+                            }
+                        }
+                    }
+                    if (!string.IsNullOrEmpty(selectdeviceId))
+                    {
+                        Set_Interaction(selectdeviceId);
+                        Thread.Sleep(300);
+                        int interMode = 2;
+                        Update_interaction_info(interMode, interactionID);
+                        Thread.Sleep(300);
+                    }
+
+                    for (int i = 0; i < deviceIds.Count; i++)
+                    {
+                        if (slienceIf[i])
+                        {
+                            Ctrl_Interaction_Mute(deviceIds[i], 1);
                         }
                         else
                         {
-                            selectdeviceId += "/" + deviceIds[i];
+                            Ctrl_Interaction_Mute(deviceIds[i], 0);
                         }
-                    }
-                }
-                if (!string.IsNullOrEmpty(selectdeviceId))
-                {
-                    Set_Interaction(selectdeviceId);
-                    Thread.Sleep(300);
-                    int interMode = 2;
-                    Update_interaction_info(interMode, interactionID);
-                    Thread.Sleep(300);
-                }
 
-                for (int i = 0; i < deviceIds.Count; i++)
-                {
-                    if (slienceIf[i])
-                    {
-                        Ctrl_Interaction_Mute(deviceIds[i], 1);
                     }
-                    else
-                    {
-                        Ctrl_Interaction_Mute(deviceIds[i], 0);
-                    }
-
-                }
+                });
             }
 
             catch (Exception ex)

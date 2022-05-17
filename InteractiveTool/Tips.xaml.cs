@@ -114,7 +114,7 @@ namespace InteractiveTool
 
                     if (method.Equals(WebRequestMethods.Http.Post))
                     {
-                        request.ContentType = "application/json; charset=utf-8";
+                        request.ContentType = "application/json; charset=utf-8";//post请求 json格式 utf-8
                         StreamWriter strStream = new StreamWriter(request.GetRequestStream());
                         strStream.Write(param);
                         strStream.Flush();
