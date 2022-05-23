@@ -87,10 +87,12 @@
                         <TextBlock x:Name="slienceBtTxt" FontSize="14" Foreground="White" HorizontalAlignment="Center" Text="全员静音"></TextBlock>
                     </StackPanel>
                 </Button>
+                
                 <Border Grid.Column="4" Width="112" Height="40" Background="#FF4D4F" CornerRadius="4">
                     <Button Style="{DynamicResource OverClassButtonStyle}" Width="100" Height="40"  x:Name="end" Click="end_Click" Content="结束互动" FontSize="16" Foreground="White" Background="#FF4D4F">
                     </Button>
                 </Border>
+                
             </Grid>
         </Border>
 

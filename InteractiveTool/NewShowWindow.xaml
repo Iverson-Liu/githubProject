@@ -1,0 +1,62 @@
+﻿<Window x:Class="InteractiveTool.NewShowWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:InteractiveTool"
+        mc:Ignorable="d"
+        WindowStyle="None"
+        ShowInTaskbar="False"
+        AllowsTransparency="True"
+        Background="{x:Null}"            
+        Title="NewShowWindow" Height="64" Width="518">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ButtonMouseOver.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    
+        <Border Background="#111214" CornerRadius="0,6,6,0" MouseLeftButtonDown="newshowwindow_MouseLeftButtonDown">
+        <Grid x:Name="newshowwindow">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="slienceMode"  BorderThickness="0" >
+                <StackPanel Width="56" Height="48"  Background="#111214">
+                    <Image x:Name="slienceBtBg" Width="22" Height="22" Source="images/slience.png"/>
+                    <Grid Height="5"></Grid>
+                    <TextBlock x:Name="slienceBtTxt" FontSize="14" Foreground="White" HorizontalAlignment="Center" Text="全员静音"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"  BorderThickness="0" >
+                <StackPanel Width="56" Height="48"  Background="#111214" >
+                    <Image  Width="22" Height="22" Source="images/teachingUnselect.png"/>
+                    <Grid Height="5"></Grid>
+                    <TextBlock  FontSize="14" Foreground="White" HorizontalAlignment="Center" Text="授课模式"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"  BorderThickness="0" >
+                <StackPanel Width="56" Height="48"  Background="#111214" >
+                    <Image  Width="22" Height="22" Source="images/discussingUnselect.png"/>
+                    <Grid Height="5"></Grid>
+                    <TextBlock  FontSize="14" Foreground="White" HorizontalAlignment="Center" Text="讨论模式"></TextBlock>
+                </StackPanel>
+            </Button>
+
+
+            <Border Grid.Column="3" Width="112" Height="40" Background="#FF4D4F" CornerRadius="4">
+                <Button Style="{DynamicResource OverClassButtonStyle}" Width="100" Height="40"  x:Name="end" Click="end_Click" Content="结束互动" FontSize="16" Foreground="White" Background="#FF4D4F">
+                </Button>
+            </Border>
+            
+        </Grid>
+    </Border>
+</Window>

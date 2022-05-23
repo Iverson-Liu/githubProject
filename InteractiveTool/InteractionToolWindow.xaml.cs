@@ -75,7 +75,7 @@ namespace InteractiveTool
             //}
 
             InitializeComponent();//界面初始化
-            InitialTray();
+            InitialTray();//托盘初始化
             HideToolView();
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
@@ -651,8 +651,9 @@ namespace InteractiveTool
                 if (MainView.Visibility == Visibility.Hidden)
                 {
                     ToolView.ColumnDefinitions.Add(show);//增加展示列
-                    //后续可能根据课程信息添加不同的布局界面
+                    //后续可能根据课程信息添加不同的布局界面 newshowwindow.xaml等文件已创建,后续根据新制定的布局界面重构,按键功能导入
                     MainView.Visibility = Visibility.Visible;
+
                     ToolView.Children.Add(MainView);//添加展开栏
                     line.Visibility = Visibility.Visible;//分割线展示
                     expandergd.ColumnDefinitions.Add(spline);
