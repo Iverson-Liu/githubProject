@@ -75,7 +75,7 @@ namespace InteractiveTool
             //}
 
             InitializeComponent();//界面初始化
-            InitialTray();//托盘初始化
+            //InitialTray();//托盘初始化
             HideToolView();
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
@@ -191,9 +191,11 @@ namespace InteractiveTool
                 },
                     KeepAlive = 180,      //发送信息以保持sockets在线的间隔时间
                     Password = "zonekeyredis@2019",   //密码
-                    AllowAdmin = true     //启用被认定为是有风险的一些命令
+                    AllowAdmin = true,     //启用被认定为是有风险的一些命令
+                    ConnectRetry = 10  //链接重试
                 };
                 logger.Info($"redis链接信息:IP:{IP} Port:6379 密码:zonekeyredis@2019");
+
                 ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configOptions);
                 sub = redis.GetSubscriber();
                 //给客户端推送有听讲申请互动
@@ -752,6 +754,25 @@ namespace InteractiveTool
                 interactionBtTxt.Foreground = Brushes.AliceBlue;
             });
         }
+        //适配触摸屏
+        private void teachingMode_TouchDown(object sender, TouchEventArgs e)
+        {
+            int interMode = 1;
+            bool result = Update_interaction_info(interMode, interactionId);
+            if (!result)
+            {
+                MessageBox.Show("授课模式请求失败", "提示");
+            }
+            this.Dispatcher.Invoke(() =>
+            {
+                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingSelect.png"));
+                teachingBtTxt.Foreground = Brushes.DeepSkyBlue;
+                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                discussingBtTxt.Foreground = Brushes.AliceBlue;
+                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                interactionBtTxt.Foreground = Brushes.AliceBlue;
+            });
+        }
 
         /// <summary>
         /// 讨论模式按键处理
@@ -759,6 +780,29 @@ namespace InteractiveTool
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void discussingMode_Click(object sender, RoutedEventArgs e)
+        {
+            int interMode = 3;
+            bool result = Update_interaction_info(interMode, interactionId);
+            if (!result)
+            {
+                MessageBox.Show("讨论模式请求失败", "提示");
+            }
+            this.Dispatcher.Invoke(() =>
+            {
+                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingSelect.png"));
+                discussingBtTxt.Foreground = Brushes.DeepSkyBlue;
+                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                teachingBtTxt.Foreground = Brushes.AliceBlue;
+                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                interactionBtTxt.Foreground = Brushes.AliceBlue;
+            });
+        }
+        /// <summary>
+        /// 适配一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void discussingMode_TouchDown(object sender, TouchEventArgs e)
         {
             int interMode = 3;
             bool result = Update_interaction_info(interMode, interactionId);
@@ -820,7 +864,30 @@ namespace InteractiveTool
                 }
             });
         }
-
+        //适配触摸屏
+        private void interactionMode_TouchDown(object sender, TouchEventArgs e)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
+                interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
+                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                teachingBtTxt.Foreground = Brushes.AliceBlue;
+                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                discussingBtTxt.Foreground = Brushes.AliceBlue;
+                if (SelectWindowsExit() != null)
+                {
+                    SelectWindowsExit().ShowDialog();
+                }
+                else
+                {
+                    SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
+                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                    subView.Top = desktopWorkingArea.Bottom - subView.Height - 64 - 160;
+                    subView.ShowDialog();
+                }
+            });
+        }
         /// <summary>
         /// 静音按键处理
         /// </summary>
@@ -864,7 +931,45 @@ namespace InteractiveTool
                 MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
             }
         }
-
+        //适配触摸屏
+        private void slienceMode_TouchDown(object sender, TouchEventArgs e)
+        {
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    if (slienceBtTxt.Text == "全员静音")
+                    {
+                        if (!string.IsNullOrEmpty(interactionId))
+                        {
+                            Slience_All(1, 1);
+                            slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slienceCancel.png"));
+                            slienceBtTxt.Text = "取消静音";
+                        }
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(interactionId))
+                        {
+                            Slience_All(0, 1);
+                            slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                            slienceBtTxt.Text = "全员静音";
+                        }
+                    }
+                    //teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                    //teachingBtTxt.Foreground = Brushes.AliceBlue;
+                    //discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                    //discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    //interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                    //interactionBtTxt.Foreground = Brushes.AliceBlue;
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"全员静音或者取消全员静音失败\n" + $"异常信息:{ex.Message}" + $"异常栈:{ex.StackTrace}");
+                MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
+            }
+        }
         /// <summary>
         /// 下拉窗口是否存在
         /// </summary>
@@ -893,6 +998,37 @@ namespace InteractiveTool
         }
 
         private void end_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(interactionId))
+                {
+                    this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
+                    {
+                        Class_End();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                MessageBox.Show("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+            }
+            finally
+            {
+                logger.Warn("课堂结束按键点击,工具后台隐藏");
+                if (SelectWindowsExit() != null)
+                {
+                    SelectWindowsExit().Close();
+                }
+                this.Visibility = Visibility.Hidden;
+                this.Hide();
+                StartTimer();
+            }
+        }
+
+        //适配触摸屏
+        private void end_TouchDown(object sender, TouchEventArgs e)
         {
             try
             {
@@ -1025,5 +1161,7 @@ namespace InteractiveTool
         {
             this.DragMove();//窗口拖拽
         }
+
+
     }
 }

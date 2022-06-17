@@ -14,7 +14,7 @@
                        
         Topmost="True"
         Left="880"
-        Height="412" Width="210">
+        Height="436" Width="267">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -25,7 +25,7 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border Background="#111214"  MouseLeftButtonDown="SelectView_MouseLeftButtonDown" Height="412" Width="210" CornerRadius="8">
+    <Border Background="#111214"  MouseLeftButtonDown="SelectView_MouseLeftButtonDown" Height="436" Width="267" CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -43,19 +43,38 @@
                         
                         <Grid x:Name="subview">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.6*"/>
+                                <ColumnDefinition Width="3.5*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
+                            
+                            <!--<Grid.RowDefinitions>
+                                <RowDefinition Height="60px"/>
+                                <RowDefinition Height="50"/>
+                                <RowDefinition Height="50"/>
+                                <RowDefinition Height="50"/>
 
-                            <!--<Border VerticalAlignment="Top" BorderThickness="0" Padding="0" Margin="0">
-                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="25" Grid.Column="0"   HorizontalAlignment="Left"  VerticalAlignment="Center" Click="interactionCb_Click"  Content="北京市第一小学" FontSize="12"  Foreground="AliceBlue"/>
+                            </Grid.RowDefinitions>
+                            
+                            <Border VerticalAlignment="Top" BorderThickness="0" Padding="0" Margin="0">
+                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="55" Grid.Column="0"    Click="interactionCb_Click"  Content="北京市海淀区苏家坨镇细小营村南88号" FontSize="16"  Foreground="AliceBlue"/>
                             </Border>
-                            <Button  Style="{DynamicResource OtherButtonStyle}"  Margin="0"  Background="#111214" Height="25" Width="40" IsEnabled="False"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Column="1"  Click="mic_Click" Padding="0" BorderThickness="0">
+                            <Button  Style="{DynamicResource OtherButtonStyle}"  Margin="0,5,0,0"  Background="#111214" Height="25" Width="40" IsEnabled="False"  VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="1"  Click="mic_Click" Padding="0" BorderThickness="0">
+                                <StackPanel  Margin="0" Background="#111214" >
+                                    <Image   HorizontalAlignment="Center" Width="20" Height="20" Source="pack://application:,,,/images/mic.png" RenderTransformOrigin="0.675,0.5"/>
+                                    <TextBlock  Visibility="Hidden" Text="取消静音"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Border VerticalAlignment="Top" BorderThickness="0" Padding="0" Margin="0" Grid.Row="1">
+                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="45" Grid.Column="0"   HorizontalAlignment="Left"  VerticalAlignment="Center" Click="interactionCb_Click"  Content="Jack" FontSize="16"  Foreground="AliceBlue"/>
+                            </Border>
+                            <Button  Style="{DynamicResource OtherButtonStyle}" Grid.Row="1" Margin="0,5,0,0"  Background="#111214" Height="25" Width="40" IsEnabled="False"  VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="1"  Click="mic_Click" Padding="0" BorderThickness="0">
                                 <StackPanel  Margin="0" Background="#111214" >
                                     <Image   HorizontalAlignment="Center" Width="20" Height="20" Source="pack://application:,,,/images/mic.png" RenderTransformOrigin="0.675,0.5"/>
                                     <TextBlock  Visibility="Hidden" Text="取消静音"/>
                                 </StackPanel>
                             </Button>-->
+
 
                         </Grid>
                         
@@ -68,11 +87,11 @@
                     <ColumnDefinition/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="80" Height="40" Background="#1890FF" CornerRadius="4"  HorizontalAlignment="Right" Margin="0,0,7.5,7.5">
-                    <Button Style="{DynamicResource OkButtonStyle}" x:Name="Ok" Width="70"  Height="35" Background="#1890FF" FontSize="16" Foreground="White" Content="确定" Click="Ok_Click"></Button>
+                <Border Grid.Column="0" Width="104" Height="40" Background="#1890FF" CornerRadius="4"  HorizontalAlignment="Right" Margin="0,0,7.5,7.5">
+                    <Button Style="{DynamicResource OkButtonStyle}" x:Name="Ok" Width="70"  Height="35" Background="#1890FF" FontSize="16" Foreground="White" Content="确定" TouchDown="Ok_TouchDown" Click="Ok_Click"></Button>
                 </Border>
-                <Border Grid.Column="1" Width="80" Height="40" Background="White" CornerRadius="4" HorizontalAlignment="Left" Margin="7.5,0,0,7.5">
-                    <Button Style="{DynamicResource CancelButtonStyle}" Background="White" Width="70" Height="35" x:Name="Cancel" Content="取消"  FontSize="16"  Foreground="Black" Click="Cancel_Click"></Button>
+                <Border Grid.Column="1" Width="104" Height="40" Background="White" CornerRadius="4" HorizontalAlignment="Left" Margin="7.5,0,0,7.5">
+                    <Button Style="{DynamicResource CancelButtonStyle}" Background="White" Width="70" Height="35" x:Name="Cancel" Content="取消"  FontSize="16"  Foreground="Black" TouchDown="Cancel_TouchDown" Click="Cancel_Click"></Button>
                 </Border>
             </Grid>
         </Grid>

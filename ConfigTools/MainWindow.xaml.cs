@@ -38,7 +38,8 @@ namespace ConfigTools
             }
             if (string.IsNullOrEmpty(IP.Text) || string.IsNullOrEmpty(Port.Text) || string.IsNullOrEmpty(Mac.Text))
             {
-                MessageBox.Show("有配置项为空,禁止写入");
+                
+                MessageBox.Show($"有配置项为空,禁止写入");
             }
             else
             {
@@ -195,6 +196,36 @@ namespace ConfigTools
         private void Min_Click(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Minimized;
+        }
+     
+        private void Button_TouchDown(object sender, TouchEventArgs e)
+        {
+            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "config.xml"))
+            {
+                CreateXml();
+            }
+            if (string.IsNullOrEmpty(IP.Text) || string.IsNullOrEmpty(Port.Text) || string.IsNullOrEmpty(Mac.Text))
+            {
+                MessageBox.Show($"有配置项为空,禁止写入");
+            }
+            else
+            {
+                WriteXml("ServerIp", IP.Text);
+                WriteXml("ServerPort", Port.Text);
+                WriteXml("ServerMac", Mac.Text);
+                //WriteRegister();
+                AutoStartUp auto = new AutoStartUp("InteractiveTool.exe");
+                auto.SetMeAutoStart();
+                MessageBoxResult result = MessageBox.Show("配置完成,需要重启生效.是否立即重启", "", MessageBoxButton.YesNo);
+                if (result == MessageBoxResult.Yes)
+                {
+                    ReStart();
+                }
+                else
+                {
+                    this.Close();
+                }
+            }
         }
     }
 }

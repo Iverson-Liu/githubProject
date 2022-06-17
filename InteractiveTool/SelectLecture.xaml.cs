@@ -239,7 +239,7 @@ namespace InteractiveTool
                         IEnumerable<JProperty> properties = datas.Properties();
                         JProperty[] list = properties.ToArray();
                         //打印课堂信息
-                        InteractionToolWindow.logger.Info($"课堂信息:{string.Join("/",properties)}");
+                        InteractionToolWindow.logger.Info($"课堂信息:{string.Join("/", properties)}");
                         bool ifMainDevice = false;
                         for (int t = 0; t < list.Length; t++)
                         {
@@ -328,13 +328,15 @@ namespace InteractiveTool
                     CheckBox checkBox = new CheckBox();
                     Button button = new Button();
                     RowDefinition row = new RowDefinition();
-                    row.Height = new GridLength(35);
+                    row.Height = new GridLength(60);
                     subview.RowDefinitions.Add(row);
 
                     checkBox.Name = "cb_" + i;
                     checkBox.Click += interactionCb_Click;
+                    //增加触摸屏响应事件
+                    checkBox.TouchDown += interactionCb_TouchDown;
                     checkBox.HorizontalAlignment = HorizontalAlignment.Left;
-                    checkBox.VerticalAlignment = VerticalAlignment.Center;
+                    checkBox.VerticalAlignment = VerticalAlignment.Top;
                     checkBox.BorderThickness = new Thickness(0);
 
 
@@ -343,7 +345,8 @@ namespace InteractiveTool
                     checkBox.SetValue(Grid.RowProperty, i);
                     checkBox.SetValue(Grid.ColumnProperty, 0);
                     checkBox.FontSize = 16;
-                    checkBox.Height = 20;
+
+                    checkBox.Height = 55;
 
                     button.Name = "bt_" + i;
                     button.SetValue(Grid.ColumnProperty, 1);
@@ -352,9 +355,12 @@ namespace InteractiveTool
                     button.Height = 18;
                     button.Width = 21;
                     button.Click += mic_Click;
+                    //增加触摸屏响应事件
+                    button.TouchDown += mic_TouchDown;
                     button.IsEnabled = true;
-                    button.HorizontalAlignment = HorizontalAlignment.Left;
-                    button.VerticalAlignment = VerticalAlignment.Center;
+                    button.Margin=new Thickness(0,5,0,0);
+                    button.HorizontalAlignment = HorizontalAlignment.Center;
+                    button.VerticalAlignment = VerticalAlignment.Top;
                     if (slienceIf[i] == false)
                     {
                         button.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/images/mic.png")));
@@ -451,6 +457,44 @@ namespace InteractiveTool
             }
         }
 
+        //适配触摸屏
+        private void interactionCb_TouchDown(object sender, TouchEventArgs e) 
+        {
+            CheckBox check = sender as CheckBox;
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    for (int i = 0; i < classroomnum; i++)
+                    {
+                        if (check.Name == ("cb_" + i))
+                        {
+                            if (check.IsChecked == true)
+                            {
+                                selectStatus[i] = true;
+                                check.Style = this.FindResource("CheckBoxIsCheckedStyle") as Style;
+                                //subview.Children[2 * i + 1].IsEnabled = false;
+                                break;
+                            }
+                            else
+                            {
+                                selectStatus[i] = false;
+                                check.Style = this.FindResource("CheckBoxNotCheckedStyle") as Style;
+                                //subview.Children[2 * i + 1].IsEnabled = true;
+                                //先切换到授课模式,取消所有静音  (目前按照新逻辑注释掉)
+                                //Update_interaction_info(1, interactionID);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"选中互动设备或取消选中互动设备异常\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n" + $"错误栈:{ex.StackTrace}");
+            }
+        }
 
         /// <summary>
         /// 静音按键处理
@@ -499,6 +543,50 @@ namespace InteractiveTool
                 MessageBox.Show($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
             }
         }
+        //适配触摸屏
+        private void mic_TouchDown(object sender, TouchEventArgs e)
+        {
+            string listenerId = string.Empty;
+            try
+            {
+
+                Button bt_mic = sender as Button;
+
+                this.Dispatcher.Invoke(() =>
+                {
+                    for (int i = 0; i < classroomnum; i++)
+                    {
+                        if (bt_mic.Name == ("bt_" + i))
+                        {
+                            listenerId = deviceIds[i];
+                            if (slienceIf[i] == false)
+                            {
+                                /*静音或者取消静音功能放到确定按键里去做,此处之记录对应设备静音状态,确定按键中根据此处记录的状态信息去设置静音接参数
+                                 */
+                                //Ctrl_Interaction_Mute(deviceIds[i], 1);
+                                bt_mic.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/images/micCancel.png")));
+                                slienceIf[i] = true;
+                                return;
+                            }
+                            else
+                            {
+                                //Ctrl_Interaction_Mute(deviceIds[i], 0);
+                                bt_mic.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/images/mic.png")));
+                                slienceIf[i] = false;
+                                return;
+                            }
+                        }
+                    }
+                }
+                );
+            }
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+            }
+        }
+
 
         public Window InteractionWindowsExit()
         {
@@ -527,7 +615,19 @@ namespace InteractiveTool
                 this.Close();
             });
         }
+        //适配触摸屏
+        private void Cancel_TouchDown(object sender, TouchEventArgs e)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
 
+                if (InteractionWindowsExit() != null)
+                {
+                    InteractionWindowsExit().Topmost = true;
+                }
+                this.Close();
+            });
+        }
         /// <summary>
         /// 切换当前状态为互动模式
         /// </summary>
@@ -614,7 +714,65 @@ namespace InteractiveTool
                 this.Close();
             }
         }
+        //适配触摸屏
+        private void Ok_TouchDown(object sender, TouchEventArgs e)
+        {
+            try
+            {
+                string selectdeviceId = string.Empty;
 
+                for (int i = 0; i < selectStatus.Count; i++)
+                {
+                    if (selectStatus[i])
+                    {
+                        if (string.IsNullOrEmpty(selectdeviceId))
+                        {
+                            selectdeviceId += deviceIds[i];
+                        }
+                        else
+                        {
+                            selectdeviceId += "/" + deviceIds[i];
+                        }
+                    }
+                }
+                if (!string.IsNullOrEmpty(selectdeviceId))
+                {
+                    Set_Interaction(selectdeviceId);
+                    Thread.Sleep(300);
+                    int interMode = 2;
+                    Update_interaction_info(interMode, interactionID);
+                    Thread.Sleep(300);
+                }
+
+                for (int i = 0; i < deviceIds.Count; i++)
+                {
+                    if (slienceIf[i])
+                    {
+                        Ctrl_Interaction_Mute(deviceIds[i], 1);
+                    }
+                    else
+                    {
+                        Ctrl_Interaction_Mute(deviceIds[i], 0);
+                    }
+
+                }
+            }
+
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show("互动请求失败\n" + "错误信息" + ex.Message);
+            }
+            finally
+            {
+
+                if (InteractionWindowsExit() != null)
+                {
+                    InteractionWindowsExit().Topmost = true;
+                }
+                this.Close();
+            }
+        }
         /// <summary>
         /// 主讲端发起互动
         /// </summary>
@@ -642,5 +800,7 @@ namespace InteractiveTool
         {
             this.DragMove();//子窗口拖拽
         }
+
+      
     }
 }

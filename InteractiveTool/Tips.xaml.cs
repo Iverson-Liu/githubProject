@@ -323,7 +323,11 @@ namespace InteractiveTool
             InteractiveDeviceId.Clear();
             InteractiveDeviceId = null;
         }
-
+        /// <summary>
+        /// 拒绝加入课堂
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void disagree_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -339,7 +343,27 @@ namespace InteractiveTool
                 this.Close();
             }
         }
+        //适配触摸屏
+        private void disagree_TouchDown(object sender, TouchEventArgs e)
+        {
+            try
+            {
+                InteractionToolWindow.logger.Info($"拒绝{message.Text}请求");
+            }
+            catch (Exception ex)
+            {
 
+            }
+            finally
+            {
+                this.Close();
+            }
+        }
+        /// <summary>
+        /// 同意加入课堂
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void agree_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -394,10 +418,65 @@ namespace InteractiveTool
                 this.Close();
             }
         }
+        //适配触摸屏
+        private void agree_TouchDown(object sender, TouchEventArgs e)
+        {
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    InteractionToolWindow.logger.Info($"同意{message.Text}请求");
+                    Get_device_info();
+                    string deviceid = string.Empty;
+                    if (InteractiveDeviceId.Count != 0 || InteractiveDeviceId != null)
+                    {
+                        for (int i = 0; i < InteractiveDeviceId.Count; i++)
+                        {
+                            if (string.IsNullOrEmpty(deviceid))
+                            {
+                                deviceid += InteractiveDeviceId[i];
+                            }
+                            else
+                            {
+                                deviceid += "/" + InteractiveDeviceId[i];
+                            }
+                        }
+                    }
+                    if (string.IsNullOrEmpty(deviceid))
+                    {
+                        deviceid += DeviceId;
+                    }
+                    else
+                    {
+                        deviceid += "/" + DeviceId;
+                    }
+                    Set_Interaction(deviceid);
+                    Thread.Sleep(300);
+                    Update_interaction_info(2, InteractionId);
+                });
 
+
+                //理论上主窗口界面应该切换到互动模式上去,涉及子窗口与父窗口通讯,先注释掉,接口保留
+                //InteractionToolWindow maintoolwindow = InteractionWindowsExit() as InteractionToolWindow;
+                //if (maintoolwindow!=null)
+                //{
+                //    maintoolwindow.AgreeInteractionModeSelect();
+                //}
+            }
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"申请加入互动失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"加入互动失败\n 异常信息:{ex.Message}");
+            }
+            finally
+            {
+                this.Close();
+            }
+        }
         private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             this.DragMove();//提示窗口拖拽
         }
+
     }
 }

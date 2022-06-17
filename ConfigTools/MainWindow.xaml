@@ -115,7 +115,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Border Width="210" Background="#1890FF" Height="45" CornerRadius="4"  VerticalAlignment="Top" Margin="0,20,0,0">
-                    <Button Style="{DynamicResource OverButtonStyle}" Width="180" Height="40"   HorizontalAlignment="Center" VerticalAlignment="Center" Background="#1890FF"   Content="完成配置" FontSize="18" Foreground="White" Click="Button_Click"></Button>
+                    <Button Style="{DynamicResource OverButtonStyle}" Width="180" Height="40"   HorizontalAlignment="Center" VerticalAlignment="Center" Background="#1890FF"   Content="完成配置" FontSize="18" Foreground="White" TouchDown="Button_TouchDown" Click="Button_Click"></Button>
                 </Border>
             </Grid>
         </Grid>

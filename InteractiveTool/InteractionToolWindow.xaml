@@ -56,7 +56,7 @@
                     <ColumnDefinition Width="2*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214"  Grid.Column="0" x:Name="teachingMode" BorderThickness="0" Click="teachingMode_Click">
+                <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214"  Grid.Column="0" x:Name="teachingMode" BorderThickness="0" TouchDown="teachingMode_TouchDown" Click="teachingMode_Click">
                     <StackPanel Width="56" Height="48"  Background="#111214">
                         <Image x:Name="teachingBtBg" Width="22" Height="22" Source="images/teachingUnselect.png"/>
                         <Grid Height="4"></Grid>
@@ -64,7 +64,7 @@
                     </StackPanel>
                 </Button>
 
-                <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="1" x:Name="discussingMode" BorderThickness="0" Click="discussingMode_Click">
+                <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="1" x:Name="discussingMode" BorderThickness="0" TouchDown="discussingMode_TouchDown" Click="discussingMode_Click">
                     <StackPanel Width="56" Height="48"  Background="#111214">
                         <Image x:Name="discussingBtBg" Width="22" Height="22" Source="images/discussingUnselect.png"/>
                         <Grid Height="4"></Grid>
@@ -72,7 +72,7 @@
                     </StackPanel>
                 </Button>
 
-                <Button Style="{DynamicResource OtherButtonStyle}"  Background="#111214" Grid.Column="2" x:Name="interactionMode" BorderThickness="0" Click="interactionMode_Click">
+                <Button Style="{DynamicResource OtherButtonStyle}"  Background="#111214" Grid.Column="2" x:Name="interactionMode" BorderThickness="0" TouchDown="interactionMode_TouchDown" Click="interactionMode_Click">
                     <StackPanel Width="56" Height="48"  Background="#111214">
                         <Image x:Name="interactionBtBg" Width="22" Height="22" Source="images/interactionUnselect.png"/>
                         <Grid Height="4"></Grid>
@@ -80,7 +80,7 @@
                     </StackPanel>
                 </Button>
 
-                <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="3"  x:Name="slienceMode"  BorderThickness="0" Click="slienceMode_Click">
+                <Button Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="3"  x:Name="slienceMode"  BorderThickness="0" TouchDown="slienceMode_TouchDown" Click="slienceMode_Click">
                     <StackPanel Width="56" Height="48"  Background="#111214">
                         <Image x:Name="slienceBtBg" Width="22" Height="22" Source="images/slience.png"/>
                         <Grid Height="4"></Grid>
@@ -89,7 +89,7 @@
                 </Button>
                 
                 <Border Grid.Column="4" Width="112" Height="40" Background="#FF4D4F" CornerRadius="4">
-                    <Button Style="{DynamicResource OverClassButtonStyle}" Width="100" Height="40"  x:Name="end" Click="end_Click" Content="结束互动" FontSize="16" Foreground="White" Background="#FF4D4F">
+                    <Button Style="{DynamicResource OverClassButtonStyle}" Width="100" Height="40"  x:Name="end" Click="end_Click" TouchDown="end_TouchDown" Content="结束互动" FontSize="16" Foreground="White" Background="#FF4D4F">
                     </Button>
                 </Border>
                 

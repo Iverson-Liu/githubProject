@@ -36,10 +36,10 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Border  Width="130" Height="40" HorizontalAlignment="Center" Background="#1890FF" VerticalAlignment="Center" CornerRadius="4">
-                    <Button Style="{DynamicResource AgreeButtonStyle}" Width="100" x:Name="agree" Background="#1890FF" FontSize="16" Foreground="AliceBlue" Content="同意" Click="agree_Click"></Button>
+                    <Button Style="{DynamicResource AgreeButtonStyle}" Width="100" x:Name="agree" Background="#1890FF" FontSize="16" Foreground="AliceBlue" Content="同意" TouchDown="agree_TouchDown" Click="agree_Click"></Button>
                 </Border>
                 <Border Grid.Column="1" Background="#FF4D4F" Width="130" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="4">
-                    <Button Style="{DynamicResource DisagreeButtonStyle}" x:Name="disagree" Background="#FF4D4F" Width="100" FontSize="16"  Foreground="AliceBlue" Content="拒绝" Click="disagree_Click" Margin="0" Padding="0"></Button>
+                    <Button Style="{DynamicResource DisagreeButtonStyle}" x:Name="disagree" Background="#FF4D4F" Width="100" FontSize="16"  Foreground="AliceBlue" Content="拒绝" TouchDown="disagree_TouchDown" Click="disagree_Click" Margin="0" Padding="0"></Button>
                 </Border>
             </Grid>
         </Grid>
