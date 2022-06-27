@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +34,12 @@ namespace InteractiveTool
         public static List<bool> slienceIf = new List<bool>();//静音状态
         public static List<string> deviceNames = new List<string>();//教师名
         public static List<string> deviceIds = new List<string>();//设备ID
+
+
+        //获取驱动事件信息
+        [DllImport("user32.dll")]
+        private static extern uint GetMessageExtraInfo();
+
         public SelectLecture(string configIp, string configPort, string configMac, string configInteractionId)
         {
             if (selectStatus == null)
@@ -358,7 +365,7 @@ namespace InteractiveTool
                     //增加触摸屏响应事件
                     button.TouchDown += mic_TouchDown;
                     button.IsEnabled = true;
-                    button.Margin=new Thickness(0,5,0,0);
+                    button.Margin = new Thickness(0, 5, 0, 0);
                     button.HorizontalAlignment = HorizontalAlignment.Center;
                     button.VerticalAlignment = VerticalAlignment.Top;
                     if (slienceIf[i] == false)
@@ -421,11 +428,21 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void interactionCb_Click(object sender, RoutedEventArgs e)
         {
-            CheckBox check = sender as CheckBox;
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent || isPen)
+            {
+                return;
+            }
+
             try
             {
+                CheckBox check = sender as CheckBox;
                 this.Dispatcher.Invoke(() =>
                 {
+                    InteractionToolWindow.logger.Info("教室选中鼠标操作响应");
                     for (int i = 0; i < classroomnum; i++)
                     {
                         if (check.Name == ("cb_" + i))
@@ -458,13 +475,15 @@ namespace InteractiveTool
         }
 
         //适配触摸屏
-        private void interactionCb_TouchDown(object sender, TouchEventArgs e) 
+        private void interactionCb_TouchDown(object sender, TouchEventArgs e)
         {
-            CheckBox check = sender as CheckBox;
             try
             {
+                CheckBox check = sender as CheckBox;
                 this.Dispatcher.Invoke(() =>
                 {
+                    InteractionToolWindow.logger.Info("教室选中鼠标操作响应");
+
                     for (int i = 0; i < classroomnum; i++)
                     {
                         if (check.Name == ("cb_" + i))
@@ -503,10 +522,19 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void mic_Click(object sender, RoutedEventArgs e)
         {
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent || isPen)
+            {
+                return;
+            }
+
             string listenerId = string.Empty;
             try
             {
-
+                InteractionToolWindow.logger.Info("静音按键鼠标操作响应");
                 Button bt_mic = sender as Button;
 
                 this.Dispatcher.Invoke(() =>
@@ -527,7 +555,7 @@ namespace InteractiveTool
                             }
                             else
                             {
-                                //Ctrl_Interaction_Mute(deviceIds[i], 0);
+                                //Ctrl_Interaction_Mute(deviceIds[i], 0); 教师单独静音接口
                                 bt_mic.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/images/mic.png")));
                                 slienceIf[i] = false;
                                 return;
@@ -549,7 +577,7 @@ namespace InteractiveTool
             string listenerId = string.Empty;
             try
             {
-
+                InteractionToolWindow.logger.Info("静音按键触摸屏操作响应");
                 Button bt_mic = sender as Button;
 
                 this.Dispatcher.Invoke(() =>
@@ -605,9 +633,18 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent || isPen)
+            {
+                return;
+            }
+
             this.Dispatcher.Invoke(() =>
             {
-
+                InteractionToolWindow.logger.Info("取消按键鼠标操作响应");
                 if (InteractionWindowsExit() != null)
                 {
                     InteractionWindowsExit().Topmost = true;
@@ -615,19 +652,22 @@ namespace InteractiveTool
                 this.Close();
             });
         }
+
         //适配触摸屏
         private void Cancel_TouchDown(object sender, TouchEventArgs e)
         {
-            this.Dispatcher.Invoke(() =>
+            this.Dispatcher.BeginInvoke((Action)delegate ()
             {
-
+                InteractionToolWindow.logger.Info("取消按键触摸屏响应");
                 if (InteractionWindowsExit() != null)
                 {
                     InteractionWindowsExit().Topmost = true;
                 }
+                Thread.Sleep(300);
                 this.Close();
             });
         }
+
         /// <summary>
         /// 切换当前状态为互动模式
         /// </summary>
@@ -658,8 +698,17 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent || isPen)
+            {
+                return;
+            }
             try
             {
+                InteractionToolWindow.logger.Info("确定按键鼠标操作响应");
                 string selectdeviceId = string.Empty;
 
                 for (int i = 0; i < selectStatus.Count; i++)
@@ -719,6 +768,8 @@ namespace InteractiveTool
         {
             try
             {
+                InteractionToolWindow.logger.Info("确定按键触摸屏操作响应");
+
                 string selectdeviceId = string.Empty;
 
                 for (int i = 0; i < selectStatus.Count; i++)
@@ -801,6 +852,6 @@ namespace InteractiveTool
             this.DragMove();//子窗口拖拽
         }
 
-      
+
     }
 }

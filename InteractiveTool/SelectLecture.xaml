@@ -56,7 +56,7 @@
                             </Grid.RowDefinitions>
                             
                             <Border VerticalAlignment="Top" BorderThickness="0" Padding="0" Margin="0">
-                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="55" Grid.Column="0"    Click="interactionCb_Click"  Content="北京市海淀区苏家坨镇细小营村南88号" FontSize="16"  Foreground="AliceBlue"/>
+                                <CheckBox Style="{DynamicResource CheckBoxIsCheckedStyle}" Height="55" Grid.Column="0"    Click="interactionCb_Click"  Content="北京市海淀区苏家坨镇细小营村南88号" FontSize="16"  Foreground="AliceBlue"/>
                             </Border>
                             <Button  Style="{DynamicResource OtherButtonStyle}"  Margin="0,5,0,0"  Background="#111214" Height="25" Width="40" IsEnabled="False"  VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="1"  Click="mic_Click" Padding="0" BorderThickness="0">
                                 <StackPanel  Margin="0" Background="#111214" >
@@ -66,7 +66,7 @@
                             </Button>
 
                             <Border VerticalAlignment="Top" BorderThickness="0" Padding="0" Margin="0" Grid.Row="1">
-                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="45" Grid.Column="0"   HorizontalAlignment="Left"  VerticalAlignment="Center" Click="interactionCb_Click"  Content="Jack" FontSize="16"  Foreground="AliceBlue"/>
+                                <CheckBox Style="{DynamicResource CheckBoxNotCheckedStyle}" Height="45" Grid.Column="0"   HorizontalAlignment="Left"  VerticalAlignment="Center" Click="interactionCb_Click"  Content="九年级智课" FontSize="16"  Foreground="AliceBlue"/>
                             </Border>
                             <Button  Style="{DynamicResource OtherButtonStyle}" Grid.Row="1" Margin="0,5,0,0"  Background="#111214" Height="25" Width="40" IsEnabled="False"  VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="1"  Click="mic_Click" Padding="0" BorderThickness="0">
                                 <StackPanel  Margin="0" Background="#111214" >

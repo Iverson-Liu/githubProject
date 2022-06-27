@@ -35,7 +35,7 @@
                     <ColumnDefinition Width="10*"/>
                     <ColumnDefinition x:Name="spline"/>
                 </Grid.ColumnDefinitions>
-                <Button HorizontalAlignment="Center"  Margin="0" Padding="0" VerticalAlignment="Center" Background="#111214" Style="{DynamicResource MouseOverButtonStyle}"   Click="fold_Click" >
+                <Button HorizontalAlignment="Center"  Margin="0" Padding="0" VerticalAlignment="Center" Background="#111214" Style="{DynamicResource MouseOverButtonStyle}" TouchDown="fold_touchDown"  Click="fold_Click" >
                     <StackPanel Margin="0">
                         <Image x:Name="expander_bg" Width="25" Height="25" Source="images/fold.png"/>
                     </StackPanel>

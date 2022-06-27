@@ -50,6 +50,12 @@ namespace InteractiveTool
 
         ISubscriber sub;
 
+        //获取驱动事件信息
+        [DllImport("user32.dll")]
+        private static extern uint GetMessageExtraInfo();
+
+
+
         public InteractionToolWindow()
         {
             //OldLogDelete();
@@ -614,7 +620,7 @@ namespace InteractiveTool
                     + "\"" + "bSpeaker" + "\"" + ":" + bSpeaker.ToString() + "}";
 
                 IssueRequest(url, param, "POST", ref data);
-
+                logger.Info($"静音状态:{ctrlMute},1:静音，0:取消");
             }
             catch (Exception ex)
             {
@@ -645,28 +651,28 @@ namespace InteractiveTool
         public void ShowToolView()
         {
             this.Dispatcher.Invoke(() =>
-            {
-                showstatus = true;
-                ToolView.Width = 584;
-                ToolView.Height = 64;
-                expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);
-                if (MainView.Visibility == Visibility.Hidden)
-                {
-                    ToolView.ColumnDefinitions.Add(show);//增加展示列
-                    //后续可能根据课程信息添加不同的布局界面 newshowwindow.xaml等文件已创建,后续根据新制定的布局界面重构,按键功能导入
-                    MainView.Visibility = Visibility.Visible;
+           {
+               showstatus = true;
+               ToolView.Width = 584;
+               ToolView.Height = 64;
+               expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);
+               if (MainView.Visibility == Visibility.Hidden)
+               {
+                   ToolView.ColumnDefinitions.Add(show);//增加展示列
+                                                        //后续可能根据课程信息添加不同的布局界面 newshowwindow.xaml等文件已创建,后续根据新制定的布局界面重构,按键功能导入
+                   MainView.Visibility = Visibility.Visible;
 
-                    ToolView.Children.Add(MainView);//添加展开栏
-                    line.Visibility = Visibility.Visible;//分割线展示
-                    expandergd.ColumnDefinitions.Add(spline);
-                    expandergd.Children.Add(line);
-                    expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
-                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                    this.Left = (0.5 * desktopWorkingArea.Right) - 250;
-                    MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
-                    logger.Warn("工具栏展开");
-                }
-            });
+                   ToolView.Children.Add(MainView);//添加展开栏
+                   line.Visibility = Visibility.Visible;//分割线展示
+                   expandergd.ColumnDefinitions.Add(spline);
+                   expandergd.Children.Add(line);
+                   expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
+                   var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                   this.Left = (0.5 * desktopWorkingArea.Right) - 250;
+                   MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
+                   logger.Warn("工具栏展开");
+               }
+           });
         }
         public void HideToolView()
         {
@@ -722,6 +728,16 @@ namespace InteractiveTool
         {
             try
             {
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent||isPen)
+                {
+                    return;
+                }
+
+                logger.Info("收起或展开按键鼠标响应");
                 ShowOrHide();
             }
             catch (Exception ex)
@@ -730,7 +746,22 @@ namespace InteractiveTool
             }
 
         }
+        private void fold_touchDown(object sender, TouchEventArgs e)
+        {
+            try
+            {
 
+                this.Dispatcher.BeginInvoke((Action)delegate
+                {
+                    logger.Info("展开收起按键触摸屏响应");
+                    ShowOrHide();
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("异常", ex.Message + " " + ex.StackTrace);
+            }
+        }
         /// <summary>
         /// 授课模式按键处理
         /// </summary>
@@ -738,6 +769,16 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void teachingMode_Click(object sender, RoutedEventArgs e)
         {
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent||isPen)
+            {
+                return;
+            }
+
+            logger.Info("授课模式控件鼠标操作响应");
             int interMode = 1;
             bool result = Update_interaction_info(interMode, interactionId);
             if (!result)
@@ -754,9 +795,11 @@ namespace InteractiveTool
                 interactionBtTxt.Foreground = Brushes.AliceBlue;
             });
         }
+
         //适配触摸屏
         private void teachingMode_TouchDown(object sender, TouchEventArgs e)
         {
+            logger.Info("授课模式控件触摸屏响应");
             int interMode = 1;
             bool result = Update_interaction_info(interMode, interactionId);
             if (!result)
@@ -781,6 +824,16 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void discussingMode_Click(object sender, RoutedEventArgs e)
         {
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent||isPen)
+            {
+                return;
+            }
+
+            logger.Info("讨论模式控件鼠标操作响应");
             int interMode = 3;
             bool result = Update_interaction_info(interMode, interactionId);
             if (!result)
@@ -804,6 +857,7 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void discussingMode_TouchDown(object sender, TouchEventArgs e)
         {
+            logger.Info("讨论模式控件触摸屏响应");
             int interMode = 3;
             bool result = Update_interaction_info(interMode, interactionId);
             if (!result)
@@ -842,51 +896,78 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void interactionMode_Click(object sender, RoutedEventArgs e)
         {
-
-            this.Dispatcher.Invoke(() =>
+            try
             {
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
-                interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                teachingBtTxt.Foreground = Brushes.AliceBlue;
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                discussingBtTxt.Foreground = Brushes.AliceBlue;
-                if (SelectWindowsExit() != null)
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent||isPen)
                 {
-                    SelectWindowsExit().ShowDialog();
+                    return;
                 }
-                else
+
+                logger.Info("互动模式控件鼠标操作响应");
+                this.Dispatcher.Invoke(() =>
                 {
-                    SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
-                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                    subView.Top = desktopWorkingArea.Bottom - subView.Height - 64 - 160;
-                    subView.ShowDialog();
-                }
-            });
+                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
+                    interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
+                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                    teachingBtTxt.Foreground = Brushes.AliceBlue;
+                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                    discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    if (SelectWindowsExit() != null)
+                    {
+                        SelectWindowsExit().ShowDialog();
+                    }
+                    else
+                    {
+                        SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
+                        var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                        subView.Top = desktopWorkingArea.Bottom - subView.Height - 64 - 160;
+                        subView.ShowDialog();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+                MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+            }
         }
+
         //适配触摸屏
         private void interactionMode_TouchDown(object sender, TouchEventArgs e)
         {
-            this.Dispatcher.Invoke(() =>
+            try
             {
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
-                interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                teachingBtTxt.Foreground = Brushes.AliceBlue;
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                discussingBtTxt.Foreground = Brushes.AliceBlue;
-                if (SelectWindowsExit() != null)
+                this.Dispatcher.Invoke(() =>
                 {
-                    SelectWindowsExit().ShowDialog();
-                }
-                else
-                {
-                    SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
-                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                    subView.Top = desktopWorkingArea.Bottom - subView.Height - 64 - 160;
-                    subView.ShowDialog();
-                }
-            });
+                    logger.Info("触摸屏操作互动模式控件");
+                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
+                    interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
+                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                    teachingBtTxt.Foreground = Brushes.AliceBlue;
+                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                    discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    if (SelectWindowsExit() != null)
+                    {
+                        SelectWindowsExit().ShowDialog();
+                    }
+                    else
+                    {
+                        SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
+                        var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                        subView.Top = desktopWorkingArea.Bottom - subView.Height - 64 - 160;
+                        subView.ShowDialog();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+                MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+            }
         }
         /// <summary>
         /// 静音按键处理
@@ -897,6 +978,17 @@ namespace InteractiveTool
         {
             try
             {
+
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent||isPen)
+                {
+                    return;
+                }
+
+                logger.Info("全员静音或取消静音控件鼠标操作响应");
                 this.Dispatcher.Invoke(() =>
                 {
                     if (slienceBtTxt.Text == "全员静音")
@@ -931,20 +1023,24 @@ namespace InteractiveTool
                 MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
             }
         }
+
         //适配触摸屏
         private void slienceMode_TouchDown(object sender, TouchEventArgs e)
         {
             try
             {
-                this.Dispatcher.Invoke(() =>
+                this.Dispatcher.BeginInvoke((Action)delegate ()
                 {
+                    logger.Info("静音控件触摸屏响应");
                     if (slienceBtTxt.Text == "全员静音")
                     {
                         if (!string.IsNullOrEmpty(interactionId))
                         {
                             Slience_All(1, 1);
+                            Thread.Sleep(200);
                             slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slienceCancel.png"));
                             slienceBtTxt.Text = "取消静音";
+                            logger.Info("取消静音");
                         }
                     }
                     else
@@ -952,8 +1048,10 @@ namespace InteractiveTool
                         if (!string.IsNullOrEmpty(interactionId))
                         {
                             Slience_All(0, 1);
+                            Thread.Sleep(200);
                             slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
                             slienceBtTxt.Text = "全员静音";
+                            logger.Info("全员静音");
                         }
                     }
                     //teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
@@ -1001,6 +1099,16 @@ namespace InteractiveTool
         {
             try
             {
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent||isPen)
+                {
+                    return;
+                }
+
+                logger.Info("结束课堂控件触摸屏响应");
                 if (!string.IsNullOrEmpty(interactionId))
                 {
                     this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
@@ -1034,6 +1142,7 @@ namespace InteractiveTool
             {
                 if (!string.IsNullOrEmpty(interactionId))
                 {
+                    logger.Info("结束课堂按钮触摸屏响应");
                     this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
                     {
                         Class_End();
@@ -1161,7 +1270,6 @@ namespace InteractiveTool
         {
             this.DragMove();//窗口拖拽
         }
-
 
     }
 }

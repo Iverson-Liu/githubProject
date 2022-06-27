@@ -186,10 +186,10 @@
                             <ColumnDefinition Width="2.5*"/>
                             <ColumnDefinition Width="30*"/>
                         </Grid.ColumnDefinitions>
-                        <Border  Height="14" Width="14" Grid.Column="0" CornerRadius="2" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#1890FF" Margin="0,5,0,0">
+                        <Border  Height="15" Width="15" Grid.Column="0" CornerRadius="2" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#1890FF" Margin="0,5,0,0">
                             <TextBlock VerticalAlignment="Top"  HorizontalAlignment="Center" FontSize="14" Foreground="White" Text="√"/>
                         </Border>
-                        <TextBlock TextWrapping="Wrap" Margin="8,3,0,0" VerticalAlignment="Center" Grid.Column="1"   Foreground="White" Text="{Binding Content,RelativeSource={RelativeSource TemplatedParent}}"></TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="8,3,0,0" VerticalAlignment="Top" Grid.Column="1"   Foreground="White" Text="{Binding Content,RelativeSource={RelativeSource TemplatedParent}}"></TextBlock>
                         <!-- TextWrapping="Wrap" 教室名称自动换行-->
                     </Grid>
                 </ControlTemplate>

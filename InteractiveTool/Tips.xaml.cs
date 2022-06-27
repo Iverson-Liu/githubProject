@@ -34,6 +34,10 @@ namespace InteractiveTool
         static List<string> InteractiveDeviceId = new List<string>();
         DispatcherTimer timer = null;
 
+        //获取驱动事件信息
+        [DllImport("user32.dll")]
+        private static extern uint GetMessageExtraInfo();
+
         ///还有一种写法,构造函数传入主窗口对象,主窗口new的时候传入this
         public TipTools(string Message, string ip, string port, string interactionId, string deviceId)
         {
@@ -330,8 +334,18 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void disagree_Click(object sender, RoutedEventArgs e)
         {
+            //触摸屏事件不响应
+            uint extra = GetMessageExtraInfo();
+            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            bool isTouchEvent = ((extra & 0x80) == 0x80);
+            if (isTouchEvent || isPen)
+            {
+                return;
+            }
+
             try
             {
+                InteractionToolWindow.logger.Info("拒绝加入课堂鼠标操作响应");
                 InteractionToolWindow.logger.Info($"拒绝{message.Text}请求");
             }
             catch (Exception ex)
@@ -348,6 +362,7 @@ namespace InteractiveTool
         {
             try
             {
+                InteractionToolWindow.logger.Info("拒绝加入课堂触摸屏操作响应");
                 InteractionToolWindow.logger.Info($"拒绝{message.Text}请求");
             }
             catch (Exception ex)
@@ -368,6 +383,16 @@ namespace InteractiveTool
         {
             try
             {
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent || isPen)
+                {
+                    return;
+                }
+
+                InteractionToolWindow.logger.Info("同意加入课堂鼠标操作响应");
                 this.Dispatcher.Invoke(() =>
                 {
                     InteractionToolWindow.logger.Info($"同意{message.Text}请求");
@@ -423,6 +448,8 @@ namespace InteractiveTool
         {
             try
             {
+                InteractionToolWindow.logger.Info("同意加入课堂触摸屏操作响应");
+
                 this.Dispatcher.Invoke(() =>
                 {
                     InteractionToolWindow.logger.Info($"同意{message.Text}请求");
