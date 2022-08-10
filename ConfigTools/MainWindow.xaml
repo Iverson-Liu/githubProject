@@ -48,15 +48,15 @@
                 <Border   HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="2"   BorderThickness="0" Margin="0" Padding="0">
                     <Button Style="{DynamicResource OtherButtonStyle}" x:Name="Min" Background="#191D21" Click="Min_Click"  BorderThickness="0" Margin="0,10,0,0" Padding="0">
                         <StackPanel >
-                            <Image Height="30" Width="46"  Source="pack://application:,,,/images/minimize.png"></Image>
+                            <Image Height="30" Width="40"  Source="pack://application:,,,/images/minimize.png"></Image>
                         </StackPanel>
                     </Button>
                 </Border>
                 <Border Grid.Column="3"  HorizontalAlignment="Right" VerticalAlignment="Top"  BorderThickness="0" Margin="0,10,0,10" >
                     <Grid>
-                        <Button Style="{DynamicResource OtherButtonStyle}" x:Name="Close" Background="#191D21" Click="Close_Click" BorderThickness="0" Margin="0" Padding="0">
+                        <Button Style="{DynamicResource OtherButtonStyle}" x:Name="close" Background="#191D21" Click="Close_Click" BorderThickness="0" Margin="0" Padding="0">
                             <StackPanel >
-                                <Image Height="30" Width="46"  Source="pack://application:,,,/images/close.png"></Image>
+                                <Image Height="30" Width="40"  Source="pack://application:,,,/images/close.png"></Image>
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -104,8 +104,8 @@
                     <Grid>
                         <TextBox x:Name="Mac"  Grid.Column="1" Height="40" Width="265" Background="White" BorderThickness="0" FontSize="18" VerticalAlignment="Center"  HorizontalAlignment="Center" TextChanged="Mac_TextChanged" Padding="0,8,0,0">
 
-                </TextBox>
-                <TextBlock Grid.Column="1" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtMacTip" Text="请配置互动终端MAC" Padding="10" MouseDown="txtMacTip_MouseDown"></TextBlock>
+                        </TextBox>
+                        <TextBlock Grid.Column="1" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtMacTip" Text="请配置互动终端MAC" Padding="10" MouseDown="txtMacTip_MouseDown"></TextBlock>
                     </Grid>
                 </Border>
             </Grid>
@@ -115,7 +115,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Border Width="210" Background="#1890FF" Height="45" CornerRadius="4"  VerticalAlignment="Top" Margin="0,20,0,0">
-                    <Button Style="{DynamicResource OverButtonStyle}" Width="180" Height="40"   HorizontalAlignment="Center" VerticalAlignment="Center" Background="#1890FF"   Content="完成配置" FontSize="18" Foreground="White" TouchDown="Button_TouchDown" Click="Button_Click"></Button>
+                    <Button x:Name="finish" Style="{DynamicResource OverButtonStyle}" Width="180" Height="40"   HorizontalAlignment="Center" VerticalAlignment="Center" Background="#1890FF"   Content="完成配置" FontSize="18" Foreground="White" TouchDown="Button_TouchDown" Click="Button_Click" ></Button>
                 </Border>
             </Grid>
         </Grid>

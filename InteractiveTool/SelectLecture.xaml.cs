@@ -5,17 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace InteractiveTool
 {
@@ -39,6 +34,8 @@ namespace InteractiveTool
         //获取驱动事件信息
         [DllImport("user32.dll")]
         private static extern uint GetMessageExtraInfo();
+
+
 
         public SelectLecture(string configIp, string configPort, string configMac, string configInteractionId)
         {
@@ -66,46 +63,57 @@ namespace InteractiveTool
             InitializeComponent();
             Get_device_info();
         }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             Dispose();
         }
+
+        /// <summary>
+        /// list等对象释放
+        /// </summary>
         public static void Dispose()
         {
-            num = 0;
-            classroomnum = 0;
-            selectStatus.Clear();
-            slienceIf.Clear();
-            deviceNames.Clear();
-            deviceIds.Clear();
-            if (selectStatus != null)
+            try
             {
-                selectStatus = null;
+                num = 0;
+                classroomnum = 0;
+                selectStatus.Clear();
+                slienceIf.Clear();
+                deviceNames.Clear();
+                deviceIds.Clear();
+                if (selectStatus != null)
+                {
+                    selectStatus = null;
+                }
+                if (slienceIf != null)
+                {
+                    slienceIf = null;
+                }
+                if (deviceIds != null)
+                {
+                    deviceIds = null;
+                }
+                if (deviceNames != null)
+                {
+                    deviceNames = null;
+                }
             }
-            if (slienceIf != null)
+            catch (Exception ex)
             {
-                slienceIf = null;
+                InteractionToolWindow.logger.Error($"选择听讲端教室子窗口资源释放失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
-            if (deviceIds != null)
-            {
-                deviceIds = null;
-            }
-            if (deviceNames != null)
-            {
-                deviceNames = null;
-            }
-
         }
+
         /// <summary>
-        /// http请求方法
+        /// 发起http请求方法
         /// </summary>
-        /// <param name="url"></param>
-        /// <param name="param"></param>
-        /// <param name="method"></param>
-        /// <param name="unprocessedValue"></param>
+        /// <param name="url">http URL</param>
+        /// <param name="param">json格式参数</param>
+        /// <param name="method">请求方式</param>
+        /// <param name="unprocessedValue">未处理json返回值</param>
         public void IssueRequest(string url, string param, string method, ref JObject unprocessedValue, ref JArray unprocessArray)
         {
-
             string requesttime = string.Empty;
             JObject jvalue = new JObject();
             JArray jarr = new JArray();
@@ -221,13 +229,12 @@ namespace InteractiveTool
         }
 
         /// <summary>
-        /// 获取课堂信息
+        /// 获取设备信息,包括设备名称,设备ID,静音状态等
         /// </summary>
         public void Get_device_info()
         {
             try
             {
-
                 JObject data = new JObject();
                 JArray array = new JArray();
 
@@ -322,10 +329,10 @@ namespace InteractiveTool
         }
 
         /// <summary>
-        /// 根据课堂信息动态添加控件
+        /// 根据设备信息动态添加控件
         /// </summary>
-        /// <param name="i"></param>
-        /// <param name="deviceName"></param>
+        /// <param name="i">数量,对应下拉列表行数</param>
+        /// <param name="deviceName">设备名称</param>
         public void Add_Control(int i, string deviceName, List<bool> selectstatus)
         {
             try
@@ -399,10 +406,10 @@ namespace InteractiveTool
         }
 
         /// <summary>
-        /// 主讲端选择听讲端静音
+        /// 主讲端发送听讲端静音请求
         /// </summary>
-        /// <param name="deviceid"></param>
-        /// <param name="ctrlmute"></param>
+        /// <param name="deviceid">设备Id</param>
+        /// <param name="ctrlmute">静音状态</param>
         public void Ctrl_Interaction_Mute(string deviceid, int ctrlmute)
         {
             try
@@ -421,8 +428,56 @@ namespace InteractiveTool
                 throw ex;
             }
         }
+
         /// <summary>
-        /// 选中按键处理
+        /// 切换当前状态为互动模式
+        /// </summary>
+        /// <param name="interMode"></param>
+        /// <param name="interactionId"></param>
+        /// <returns></returns>
+        public bool Update_interaction_info(int interMode, string interactionId)
+        {
+            try
+            {
+                JObject data = new JObject();
+                JArray array = new JArray();
+                string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/update_interaction_info";
+                string param = @"{""interMode""" + ":" + interMode.ToString() + "," + "\"" + "interactionId" + "\"" + ":" + "\"" + interactionId + "\"" + "}";
+                IssueRequest(url, param, "POST", ref data, ref array);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("切换当前模式为互动模式请求失败\n" + "错误信息:" + ex.Message + "\n 错误栈:" + ex.StackTrace, "异常");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 主讲端选择听讲端设备加入互动
+        /// </summary>
+        /// <param name="deviceId">听讲端设备ID</param>
+        public void Set_Interaction(string deviceId)
+        {
+            try
+            {
+                JObject data = new JObject();
+                JArray array = new JArray();
+                string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/set_interaction";
+
+                string param = @"{""interactionId""" + ":" + interactionID.ToString() + "," + "\"" + "deviceId" + "\"" + ":" + "\"" + deviceId + "\"" + "}";
+                InteractionToolWindow.logger.Info($"主讲端选择听讲端互动请求: Url:{url}\n param:{param}");
+                IssueRequest(url, param, "POST", ref data, ref array);
+            }
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端请求失败\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+                MessageBox.Show("设置听讲端互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
+            }
+        }
+
+        /// <summary>
+        /// 听讲端教室选中按键处理
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -474,7 +529,11 @@ namespace InteractiveTool
             }
         }
 
-        //适配触摸屏
+        /// <summary>
+        /// 互动教室选中适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void interactionCb_TouchDown(object sender, TouchEventArgs e)
         {
             try
@@ -482,7 +541,7 @@ namespace InteractiveTool
                 CheckBox check = sender as CheckBox;
                 this.Dispatcher.Invoke(() =>
                 {
-                    InteractionToolWindow.logger.Info("教室选中鼠标操作响应");
+                    InteractionToolWindow.logger.Info("教室选中触摸屏操作响应");
 
                     for (int i = 0; i < classroomnum; i++)
                     {
@@ -516,7 +575,7 @@ namespace InteractiveTool
         }
 
         /// <summary>
-        /// 静音按键处理
+        /// 听讲端设备静音按键处理
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -571,7 +630,12 @@ namespace InteractiveTool
                 MessageBox.Show($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
             }
         }
-        //适配触摸屏
+
+        /// <summary>
+        /// 听讲端设备静音按键适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void mic_TouchDown(object sender, TouchEventArgs e)
         {
             string listenerId = string.Empty;
@@ -615,7 +679,10 @@ namespace InteractiveTool
             }
         }
 
-
+        /// <summary>
+        /// 主界面窗口检测,获取窗口句柄
+        /// </summary>
+        /// <returns></returns>
         public Window InteractionWindowsExit()
         {
             foreach (Window item in Application.Current.Windows)
@@ -633,64 +700,59 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            //触摸屏事件不响应
-            uint extra = GetMessageExtraInfo();
-            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
-            bool isTouchEvent = ((extra & 0x80) == 0x80);
-            if (isTouchEvent || isPen)
-            {
-                return;
-            }
-
-            this.Dispatcher.Invoke(() =>
-            {
-                InteractionToolWindow.logger.Info("取消按键鼠标操作响应");
-                if (InteractionWindowsExit() != null)
-                {
-                    InteractionWindowsExit().Topmost = true;
-                }
-                this.Close();
-            });
-        }
-
-        //适配触摸屏
-        private void Cancel_TouchDown(object sender, TouchEventArgs e)
-        {
-            this.Dispatcher.BeginInvoke((Action)delegate ()
-            {
-                InteractionToolWindow.logger.Info("取消按键触摸屏响应");
-                if (InteractionWindowsExit() != null)
-                {
-                    InteractionWindowsExit().Topmost = true;
-                }
-                Thread.Sleep(300);
-                this.Close();
-            });
-        }
-
-        /// <summary>
-        /// 切换当前状态为互动模式
-        /// </summary>
-        /// <param name="interMode"></param>
-        /// <param name="interactionId"></param>
-        /// <returns></returns>
-        public bool Update_interaction_info(int interMode, string interactionId)
-        {
             try
             {
-                JObject data = new JObject();
-                JArray array = new JArray();
-                string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/update_interaction_info";
-                string param = @"{""interMode""" + ":" + interMode.ToString() + "," + "\"" + "interactionId" + "\"" + ":" + "\"" + interactionId + "\"" + "}";
-                IssueRequest(url, param, "POST", ref data, ref array);
-                return true;
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent || isPen)
+                {
+                    return;
+                }
+
+                this.Dispatcher.Invoke(() =>
+                {
+                    InteractionToolWindow.logger.Info("取消按键鼠标操作响应");
+                    if (InteractionWindowsExit() != null)
+                    {
+                        InteractionWindowsExit().Topmost = true;
+                    }
+                    this.Close();
+                });
             }
             catch (Exception ex)
             {
-                MessageBox.Show("切换当前模式为互动模式请求失败\n" + "错误信息:" + ex.Message + "\n 错误栈:" + ex.StackTrace, "异常");
-                return false;
+                InteractionToolWindow.logger.Error($"取消按键鼠标点击失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
+
+        /// <summary>
+        /// 取消按键适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Cancel_TouchDown(object sender, TouchEventArgs e)
+        {
+            try
+            {
+                this.Dispatcher.BeginInvoke((Action)delegate ()
+                {
+                    InteractionToolWindow.logger.Info("取消按键触摸屏响应");
+                    if (InteractionWindowsExit() != null)
+                    {
+                        InteractionWindowsExit().Topmost = true;
+                    }
+                    Thread.Sleep(300);
+                    this.Close();
+                });
+            }
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"取消按键触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+            }
+        }
+
         /// <summary>
         /// 确认按键处理
         /// </summary>
@@ -744,10 +806,8 @@ namespace InteractiveTool
                     {
                         Ctrl_Interaction_Mute(deviceIds[i], 0);
                     }
-
                 }
             }
-
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
@@ -763,7 +823,12 @@ namespace InteractiveTool
                 this.Close();
             }
         }
-        //适配触摸屏
+
+        /// <summary>
+        /// 确认按键教学一体机触摸屏适配
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Ok_TouchDown(object sender, TouchEventArgs e)
         {
             try
@@ -805,10 +870,8 @@ namespace InteractiveTool
                     {
                         Ctrl_Interaction_Mute(deviceIds[i], 0);
                     }
-
                 }
             }
-
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
@@ -824,34 +887,15 @@ namespace InteractiveTool
                 this.Close();
             }
         }
+
         /// <summary>
-        /// 主讲端发起互动
+        /// 鼠标拖动功能
         /// </summary>
-        /// <param name="deviceId"></param>
-        public void Set_Interaction(string deviceId)
-        {
-            try
-            {
-                JObject data = new JObject();
-                JArray array = new JArray();
-                string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/set_interaction";
-
-                string param = @"{""interactionId""" + ":" + interactionID.ToString() + "," + "\"" + "deviceId" + "\"" + ":" + "\"" + deviceId + "\"" + "}";
-                InteractionToolWindow.logger.Info($"主讲端选择听讲端互动请求: Url:{url}\n param:{param}");
-                IssueRequest(url, param, "POST", ref data, ref array);
-            }
-            catch (Exception ex)
-            {
-                InteractionToolWindow.logger.Error($"主讲端选择听讲端请求失败\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
-                MessageBox.Show("设置听讲端互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
-            }
-        }
-
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SelectView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             this.DragMove();//子窗口拖拽
         }
-
-
     }
 }

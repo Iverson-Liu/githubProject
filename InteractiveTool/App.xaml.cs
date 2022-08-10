@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace InteractiveTool
@@ -22,6 +15,11 @@ namespace InteractiveTool
             this.Startup += new StartupEventHandler(App_Startup);
         }
 
+        /// <summary>
+        /// 多程序运行防呆
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         void App_Startup(object sender, StartupEventArgs e)
         {
             bool ret;
@@ -29,11 +27,10 @@ namespace InteractiveTool
 
             if (!ret)
             {
-                MessageBox.Show("已有一个程序实例运行");
+                MessageBox.Show("已有一个互动工具实例运行");
                 Environment.Exit(0);
             }
-
         }
     }
-    
+
 }

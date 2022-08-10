@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteractiveTool", "..\Inter
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ZonekeyInteractiveTool", "..\ZonekeyInteractiveTool\ZonekeyInteractiveTool.vdproj", "{DED9F4B7-A2F6-4AE6-909C-1AE133EBB935}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BootUp", "..\BootUp\BootUp.csproj", "{ABA33A58-A9AA-4D9C-B152-ED9CD2F74805}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{058F842C-F194-491D-B71D-24F00D6A2BBB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DED9F4B7-A2F6-4AE6-909C-1AE133EBB935}.Debug|Any CPU.ActiveCfg = Debug
 		{DED9F4B7-A2F6-4AE6-909C-1AE133EBB935}.Release|Any CPU.ActiveCfg = Release
+		{ABA33A58-A9AA-4D9C-B152-ED9CD2F74805}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABA33A58-A9AA-4D9C-B152-ED9CD2F74805}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABA33A58-A9AA-4D9C-B152-ED9CD2F74805}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABA33A58-A9AA-4D9C-B152-ED9CD2F74805}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

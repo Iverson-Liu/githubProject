@@ -68,8 +68,31 @@
                             <Setter Property="Control.Foreground" Value="White" />
                         </Style>
                     </ControlTemplate.Resources>
-                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="White" CornerRadius="0" Background="{TemplateBinding Background}">
                         <TextBlock Text="结束互动" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#FF4D4F" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+
+    <Style x:Key="OverInteractionButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="ShadowStyle">
+                            <Setter Property="Control.Foreground" Value="White" />
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border Name="border" BorderThickness="0" Padding="0" BorderBrush="DarkGray" CornerRadius="0" Background="{TemplateBinding Background}">
+                        <TextBlock Text="退出互动" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

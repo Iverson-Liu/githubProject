@@ -5,18 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace InteractiveTool
@@ -26,12 +17,11 @@ namespace InteractiveTool
     /// </summary>
     public partial class TipTools : Window
     {
-
         string IP;
         string Port;
         string InteractionId;
         string DeviceId;
-        static List<string> InteractiveDeviceId = new List<string>();
+        static List<string> InteractiveDeviceId = new List<string>();//根据获取设备信息接口,动态获取正在互动中的设备
         DispatcherTimer timer = null;
 
         //获取驱动事件信息
@@ -41,6 +31,10 @@ namespace InteractiveTool
         ///还有一种写法,构造函数传入主窗口对象,主窗口new的时候传入this
         public TipTools(string Message, string ip, string port, string interactionId, string deviceId)
         {
+            if (InteractiveDeviceId == null)
+            {
+                InteractiveDeviceId = new List<string>();
+            }
             if (SelectWindowsExit() != null)
             {
                 SelectWindowsExit().Close();
@@ -49,10 +43,6 @@ namespace InteractiveTool
             this.Port = port;
             this.InteractionId = interactionId;
             this.DeviceId = deviceId;
-            if (InteractiveDeviceId == null)
-            {
-                InteractiveDeviceId = new List<string>();
-            }
             this.Closing += Tips_Closing;
             InitializeComponent();
 
@@ -60,6 +50,7 @@ namespace InteractiveTool
             InitTimer();
             StartTimer();
         }
+
         private void InitTimer()
         {
             if (timer == null)
@@ -69,11 +60,13 @@ namespace InteractiveTool
                 timer.Interval = TimeSpan.FromSeconds(15);
             }
         }
+
         public void DataTime_Tick(object sender, EventArgs e)
         {
-            InteractionToolWindow.logger.Info($"30s未处理{message.Text}请求");
+            InteractionToolWindow.logger.Info($"15s未处理{message.Text}请求");
             this.Close();
         }
+
         public void StartTimer()
         {
             if (timer != null && timer.IsEnabled == false)
@@ -81,6 +74,11 @@ namespace InteractiveTool
                 timer.Start();
             }
         }
+
+        /// <summary>
+        /// 选择听讲端教书子窗口界面检测,获取窗口句柄
+        /// </summary>
+        /// <returns></returns>
         public Window SelectWindowsExit()
         {
             foreach (Window item in Application.Current.Windows)
@@ -91,7 +89,10 @@ namespace InteractiveTool
             return null;
         }
 
-
+        /// <summary>
+        /// 获取主界面窗口句柄
+        /// </summary>
+        /// <returns></returns>
         public Window InteractionWindowsExit()
         {
             foreach (Window item in Application.Current.Windows)
@@ -102,6 +103,14 @@ namespace InteractiveTool
             return null;
         }
 
+        /// <summary>
+        /// 发起Http请求方法
+        /// </summary>
+        /// <param name="url">http请求URL</param>
+        /// <param name="param">json格式参数</param>
+        /// <param name="method">请求方法</param>
+        /// <param name="unprocessedValue">未处理json数据</param>
+        /// <param name="unprocessArray">未处理json格式 设备信息数组</param>
         public void IssueRequest(string url, string param, string method, ref JObject unprocessedValue, ref JArray unprocessArray)
         {
             string requesttime = string.Empty;
@@ -118,6 +127,7 @@ namespace InteractiveTool
 
                     if (method.Equals(WebRequestMethods.Http.Post))
                     {
+                        InteractionToolWindow.logger.Info($"Http Request Url:{url} Param:{param}");
                         request.ContentType = "application/json; charset=utf-8";
                         StreamWriter strStream = new StreamWriter(request.GetRequestStream());
                         strStream.Write(param);
@@ -218,16 +228,13 @@ namespace InteractiveTool
             }
         }
 
-
-
         /// <summary>
-        /// 获取课堂信息
+        /// 获取当前会议设备信息,包括设备名称,设备ID,设备角色等
         /// </summary>
         public void Get_device_info()
         {
             try
             {
-
                 JObject data = new JObject();
                 JArray array = new JArray();
 
@@ -248,7 +255,6 @@ namespace InteractiveTool
                         {
                             if (list[t].Name == "role")
                             {
-
                                 if (list[t].Value.ToString() == "2")
                                 {
                                     ifInteractive = true;
@@ -260,16 +266,18 @@ namespace InteractiveTool
                             }
                             if (list[t].Name == "deviceId")
                             {
-                                if (ifInteractive)
+                                if (ifInteractive)//如果在互动中
                                 {
-                                    InteractiveDeviceId.Add(list[t].Value.ToString());
+                                    if (list[t].Value != null)//且设备信息不为空
+                                    {
+                                        InteractiveDeviceId.Add(list[t].Value.ToString());//添加在互动中的设备信息
+                                    }
                                 }
                             }
                         }
                     }
                     InteractionToolWindow.logger.Info($"互动课堂信息{string.Join("/", InteractiveDeviceId)}");
                 }
-
             }
             catch (Exception ex)
             {
@@ -279,9 +287,10 @@ namespace InteractiveTool
             }
         }
 
-
-
-
+        /// <summary>
+        /// 同意加入课堂后,设置听讲端设备互动
+        /// </summary>
+        /// <param name="deviceId">听讲端设备ID</param>
         public void Set_Interaction(string deviceId)
         {
             try
@@ -295,11 +304,16 @@ namespace InteractiveTool
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"申请加入互动时,发送主讲端选择听讲端互动请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show("听讲端申请加入互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
                 throw ex;
             }
         }
 
+        /// <summary>
+        /// 设置互动状态
+        /// </summary>
+        /// <param name="interMode">互动模式(1授课,2互动,3讨论 4板书)</param>
+        /// <param name="interactionId">互动ID</param>
+        /// <returns></returns>
         public bool Update_interaction_info(int interMode, string interactionId)
         {
             try
@@ -314,21 +328,26 @@ namespace InteractiveTool
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"申请加入互动时,发送将当前模式切换为互动模式请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show("听讲端申请加入互动后刷新互动模式请求失败\n" + "错误信息:" + ex.Message + "\n 错误栈:" + ex.StackTrace, "异常");
                 throw ex;
             }
         }
+
         public void Tips_Closing(object sender, System.ComponentModel.CancelEventArgs args)
         {
             Dispose();
         }
+
+        /// <summary>
+        /// 列表资源释放
+        /// </summary>
         public static void Dispose()
         {
             InteractiveDeviceId.Clear();
             InteractiveDeviceId = null;
         }
+
         /// <summary>
-        /// 拒绝加入课堂
+        /// 拒绝加入课堂按键请求
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -350,14 +369,19 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-
+                InteractionToolWindow.logger.Error($"拒绝加入课堂按键异常,异常信息:{ex.Message}");
             }
             finally
             {
                 this.Close();
             }
         }
-        //适配触摸屏
+
+        /// <summary>
+        /// 拒绝按键适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void disagree_TouchDown(object sender, TouchEventArgs e)
         {
             try
@@ -367,15 +391,16 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-
+                InteractionToolWindow.logger.Error($"拒绝加入课堂按键异常,异常信息:{ex.Message}");
             }
             finally
             {
                 this.Close();
             }
         }
+
         /// <summary>
-        /// 同意加入课堂
+        /// 同意加入课堂发起对应请求
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -421,29 +446,34 @@ namespace InteractiveTool
                         deviceid += "/" + DeviceId;
                     }
                     Set_Interaction(deviceid);
-                    Thread.Sleep(300);
+                    Thread.Sleep(200);
                     Update_interaction_info(2, InteractionId);
+                    Thread.Sleep(200);
+
+                    //理论上主窗口界面应该切换到互动模式上去,涉及子窗口与父窗口通讯,先注释掉,接口保留
+                    //InteractionToolWindow maintoolwindow = InteractionWindowsExit() as InteractionToolWindow;
+                    //if (maintoolwindow != null)
+                    //{
+                    //    maintoolwindow.listener.IsInteracting();
+                    //}
                 });
-
-
-                //理论上主窗口界面应该切换到互动模式上去,涉及子窗口与父窗口通讯,先注释掉,接口保留
-                //InteractionToolWindow maintoolwindow = InteractionWindowsExit() as InteractionToolWindow;
-                //if (maintoolwindow!=null)
-                //{
-                //    maintoolwindow.AgreeInteractionModeSelect();
-                //}
             }
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"申请加入互动失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show($"加入互动失败\n 异常信息:{ex.Message}");
+                MessageBox.Show($"加入互动失败\n 异常信息:{ex.Message}.\r\n");
             }
             finally
             {
                 this.Close();
             }
         }
-        //适配触摸屏
+
+        /// <summary>
+        /// 同意按键适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void agree_TouchDown(object sender, TouchEventArgs e)
         {
             try
@@ -478,17 +508,17 @@ namespace InteractiveTool
                         deviceid += "/" + DeviceId;
                     }
                     Set_Interaction(deviceid);
-                    Thread.Sleep(300);
+                    Thread.Sleep(200);
                     Update_interaction_info(2, InteractionId);
+                    Thread.Sleep(200);
+
+                    //理论上主窗口界面应该切换到互动模式上去,涉及子窗口与父窗口通讯,先注释掉,接口保留
+                    //InteractionToolWindow maintoolwindow = InteractionWindowsExit() as InteractionToolWindow;
+                    //if (maintoolwindow != null)
+                    //{
+                    //    maintoolwindow.listener.IsInteracting();
+                    //}
                 });
-
-
-                //理论上主窗口界面应该切换到互动模式上去,涉及子窗口与父窗口通讯,先注释掉,接口保留
-                //InteractionToolWindow maintoolwindow = InteractionWindowsExit() as InteractionToolWindow;
-                //if (maintoolwindow!=null)
-                //{
-                //    maintoolwindow.AgreeInteractionModeSelect();
-                //}
             }
             catch (Exception ex)
             {
@@ -500,6 +530,12 @@ namespace InteractiveTool
                 this.Close();
             }
         }
+
+        /// <summary>
+        /// 提示窗口,窗口拖动
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             this.DragMove();//提示窗口拖拽

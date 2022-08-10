@@ -1,24 +1,20 @@
-﻿using System;
+﻿using IWshRuntimeLibrary;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using IWshRuntimeLibrary;
 namespace ConfigTools
 {
     class AutoStartUp
     {
-
         public AutoStartUp(string autoStartFile)
         {
             this.appAllPath = AppDomain.CurrentDomain.BaseDirectory + autoStartFile;
         }
+
         /// <summary>
         /// 快捷方式名称-任意自定义
         /// </summary>
-        private const string QuickName = "InteractionTool";
+        private const string QuickName = "BootUp";
 
         /// <summary>
         /// 自动获取系统自动启动目录

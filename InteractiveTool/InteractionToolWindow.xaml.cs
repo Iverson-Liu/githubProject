@@ -1,29 +1,22 @@
-﻿using System;
-using System.Xml;
+﻿using Newtonsoft.Json.Linq;
+using NLog;
+using StackExchange.Redis;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Net;
-using System.IO;
-using System.Net.Http;
-using Newtonsoft.Json.Linq;
-using StackExchange.Redis;
-using System.Diagnostics;
-using System.Threading;
 using System.Windows.Threading;
-using System.Runtime.InteropServices;
-using System.Windows.Interop;
-using NLog;
+using System.Xml;
+using WebSocketSharp;
+
 namespace InteractiveTool
 {
     /// <summary>
@@ -37,31 +30,64 @@ namespace InteractiveTool
         public static string Url;
         public static string interactionId;//查询当前互动ID
         public static string curriculumName;//查询当前课程名
-        public static bool showstatus = false;
+        public static bool showstatus = false;//工具界面是否展示
         public static string MainDeviceId;//主讲设备ID
-        public static Logger logger = LogManager.GetCurrentClassLogger();
-        public static string redisconnectmessage;
+        public static string currentListenerDeviceId;//当前设备ID
+
+        public static NLog.Logger logger = LogManager.GetCurrentClassLogger();
 
         static double top = 0;
         static double left = 0;
 
-        DispatcherTimer timer = null;
-        DispatcherTimer hideTimer = null;
+        DispatcherTimer timer = null;//获取课表信息计时器
+        DispatcherTimer hideTimer = null;//隐藏工具栏计时器
 
+        public static string redisconnectmessage;
         ISubscriber sub;
+
+        //听讲端界面
+        public ListenClient listener = new ListenClient();
+
+        //板书界面
+        public NewShowWindow bBoardWriting = new NewShowWindow();
+
+        /// <summary>
+        /// 工具栏展示状态枚举
+        /// </summary>
+        public enum Status
+        {
+            None = 0,
+            Speaker = 1,
+            BBoardWriting = 2,
+            ListenClient = 3,
+            InterListenClient = 4,
+            //DiscussListenClient = 5
+        }
+
+        //默认空值,获取到课表信息后更新当前状态,课程结束置空
+        public static Status showWindowStatus = Status.None;
 
         //获取驱动事件信息
         [DllImport("user32.dll")]
-        private static extern uint GetMessageExtraInfo();
+        public static extern uint GetMessageExtraInfo();
 
+        private static TimeSpan touchTime;
+        public TimeSpan aviodclick = new TimeSpan(0, 0, 1);
 
 
         public InteractionToolWindow()
         {
+            listener.end.Click += end_Click;
+            listener.end.TouchDown += end_TouchDown;
+            listener.Visibility = Visibility.Hidden;
+            bBoardWriting.end.Click += end_Click;
+            bBoardWriting.end.TouchDown += end_TouchDown;
+            bBoardWriting.Visibility = Visibility.Hidden;
             //OldLogDelete();
             IP = ReadConfig("ServerIp");
             Port = ReadConfig("ServerPort");
             Mac = ReadConfig("ServerMac");
+
             if (!ConfigEmpty())
             {
                 MessageBox.Show("配置文件中存在相关配置缺失,请配置完成后重新启动", "警告");
@@ -71,8 +97,10 @@ namespace InteractiveTool
 
             InitTimer();
             InitHideTimer();
-            this.Visibility = Visibility.Hidden;
-            RedisClient();
+
+            //取消redis订阅方式,改为websocket长链接
+            //RedisClient();
+
             //初始化时加入redis重连机制
             //while (!string.IsNullOrEmpty(redisconnectmessage))
             //{
@@ -80,53 +108,68 @@ namespace InteractiveTool
             //    RedisClient();
             //}
 
-            InitializeComponent();//界面初始化
+            //界面初始化
+            InitializeComponent();
             //InitialTray();//托盘初始化
             HideToolView();
+
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
+            string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
+            logger.Info($"FindCurriculum Url:{url}");
+            this.Visibility = Visibility.Hidden;//新界面兼容时注释掉方便开发
+            //新界面兼容时注释掉方便开发
             FindCurriculum();
-            SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
-            subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
+            //SelectLecture subView = new SelectLecture(IP, Port, Mac, interactionId);
+            //subView.Top = SystemParameters.WorkArea.Bottom - 64 - 160 - subView.Height;
+            //subView.Show();
         }
 
-        //log文件检测,用于定期日志删除(目前定义为删除15之前的程序日志.保证内存空间)
+        /// <summary>
+        /// log文件检测,用于定期日志删除(目前定义为删除15-day之前的程序日志.保证内存空间)
+        /// </summary>
         public void OldLogDelete()
         {
-            string oldlogMonth = DateTime.Today.AddDays(-15).ToString("yyyy-MM");
-            string oldlogdate = DateTime.Today.AddDays(-15).ToString("yyyy-MM-dd");
-
-            if (Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "Logs"))
+            try
             {
-                string path = AppDomain.CurrentDomain.BaseDirectory + "Logs" + "\\" + oldlogMonth;
-                if (Directory.Exists(path))
-                {
-                    if (File.Exists($"{path}\\{oldlogdate}.log"))
-                    {
-                        File.Delete($"{path}\\{oldlogdate}.log");
-                    }
+                string oldlogMonth = DateTime.Today.AddDays(-15).ToString("yyyy-MM");
+                string oldlogdate = DateTime.Today.AddDays(-15).ToString("yyyy-MM-dd");
 
-                    string[] logfiles = Directory.GetFiles(path);
-                    //将大于15天以上的日志文件全部删除
-                    for (int i = 0; i < logfiles.Length; i++)
+                if (Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "Logs"))
+                {
+                    string path = AppDomain.CurrentDomain.BaseDirectory + "Logs" + "\\" + oldlogMonth;
+                    if (Directory.Exists(path))
                     {
-                        string filecreatedate = logfiles[i].Replace(".log", "").Replace($"{path}\\", "");
-                        if (DateTime.Compare(DateTime.Parse(filecreatedate), DateTime.Parse(oldlogdate)) < 0)
+                        if (File.Exists($"{path}\\{oldlogdate}.log"))
                         {
-                            File.Delete($"{logfiles[i]}");
+                            File.Delete($"{path}\\{oldlogdate}.log");
+                        }
+
+                        string[] logfiles = Directory.GetFiles(path);
+                        //将大于15天以上的日志文件全部删除
+                        for (int i = 0; i < logfiles.Length; i++)
+                        {
+                            string filecreatedate = logfiles[i].Replace(".log", "").Replace($"{path}\\", "");
+                            if (DateTime.Compare(DateTime.Parse(filecreatedate), DateTime.Parse(oldlogdate)) < 0)
+                            {
+                                File.Delete($"{logfiles[i]}");
+                            }
+                        }
+                        if (Directory.GetFiles(path).Length == 0)
+                        {
+                            Directory.Delete(path);
                         }
                     }
-                    if (Directory.GetFiles(path).Length == 0)
-                    {
-                        Directory.Delete(path);
-                    }
                 }
-
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"日志删除方法失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
         /// <summary>
-        /// 收起工具栏定时
+        /// 初始化收起工具栏定时
         /// </summary>
         private void InitHideTimer()
         {
@@ -137,11 +180,20 @@ namespace InteractiveTool
                 hideTimer.Interval = TimeSpan.FromSeconds(30);
             }
         }
+
+        /// <summary>
+        /// 收起工具栏定时器方法
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void HideDataTime_Tick(object sender, EventArgs e)
         {
             HideToolView();
         }
 
+        /// <summary>
+        /// 收起工具栏计时器启动
+        /// </summary>
         public void StartHideTimer()
         {
             if (hideTimer != null && hideTimer.IsEnabled == false)
@@ -149,6 +201,10 @@ namespace InteractiveTool
                 hideTimer.Start();
             }
         }
+
+        /// <summary>
+        /// 收起工具栏计时器停止
+        /// </summary>
         public void StopHideTimer()
         {
             if (hideTimer != null)
@@ -157,6 +213,9 @@ namespace InteractiveTool
             }
         }
 
+        /// <summary>
+        /// 初始化获取课堂信息计时器,时间间隔为5s
+        /// </summary>
         private void InitTimer()
         {
             if (timer == null)
@@ -166,10 +225,19 @@ namespace InteractiveTool
                 timer.Interval = TimeSpan.FromSeconds(5);
             }
         }
+
+        /// <summary>
+        /// 获取课堂信息计时器方法
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public void DataTime_Tick(object sender, EventArgs e)
         {
             FindCurriculum();
         }
+        /// <summary>
+        /// 获取课堂信息计时器启动
+        /// </summary>
         public void StartTimer()
         {
             if (timer != null && timer.IsEnabled == false)
@@ -177,6 +245,9 @@ namespace InteractiveTool
                 timer.Start();
             }
         }
+        /// <summary>
+        /// 获取课堂信息计时器停止(停止条件,课堂信息不为空,即开始上课)
+        /// </summary>
         public void StopTimer()
         {
             if (timer != null)
@@ -185,6 +256,449 @@ namespace InteractiveTool
             }
         }
 
+        /// <summary>
+        /// 确定websocket消息的频道类型
+        /// </summary>
+        /// <param name="js">websocket返回json格式消息</param>
+        /// <returns></returns>
+        public string ThisMessageType(JProperty[] js)
+        {
+            try
+            {
+                for (int i = 0; i < js.Length; i++)
+                {
+                    if (js[i].Name != "messageFlag")
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        return js[i].Value.ToString();
+                    }
+                }
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"WebSocket获取消息类型失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// 根据websocket相关信息处理
+        /// </summary>
+        /// <param name="messagetype">消息类型</param>
+        /// <param name="messages">json消息</param>
+        public void DealWithwsMessage(string messagetype, JProperty[] messages)
+        {
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    if (messagetype == "2")//获取设备角色
+                    {
+                        for (int i = 0; i < messages.Length; i++)
+                        {
+                            if (messages[i].Name == "interactionId")
+                            {
+                                if (messages[i].Value.ToString() != interactionId)
+                                {
+                                    return;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+                            if (messages[i].Name == "deviceId")
+                            {
+                                if (messages[i].Value.ToString() != currentListenerDeviceId)
+                                {
+                                    return;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+                            if (messages[i].Name == "role")//role角色信息 0主讲
+                            {
+                                switch (showWindowStatus)
+                                {
+                                    case Status.Speaker:
+                                        break;
+                                    case Status.BBoardWriting:
+                                        break;
+                                    case Status.ListenClient:
+                                        if (messages[i].Value.ToString() == "1")//1听讲
+                                        {
+                                            showWindowStatus = Status.ListenClient;
+                                            logger.Info($"当前设备{currentListenerDeviceId}收到WebSocket客户端的角色信息为{messages[i].Value.ToString()},界面为听讲端模式");
+                                            listener.IsListenClient();
+                                        }
+                                        else if (messages[i].Value.ToString() == "2")//2互动听讲
+                                        {
+                                            showWindowStatus = Status.InterListenClient;
+                                            logger.Info($"当前设备{currentListenerDeviceId}收到WebSocket客户端的角色信息为{messages[i].Value.ToString()},界面为互动听讲端模式");
+                                            listener.IsInteracting();
+                                        }
+                                        break;
+                                    case Status.InterListenClient:
+                                        if (messages[i].Value.ToString() == "1")//1听讲
+                                        {
+                                            showWindowStatus = Status.ListenClient;
+                                            logger.Info($"当前设备{currentListenerDeviceId}收到WebSocket客户端的角色信息为{messages[i].Value.ToString()},界面为听讲端模式");
+                                            listener.IsListenClient();
+                                        }
+                                        else if (messages[i].Value.ToString() == "2")//2互动听讲
+                                        {
+                                            showWindowStatus = Status.InterListenClient;
+                                            logger.Info($"当前设备{currentListenerDeviceId}收到WebSocket客户端的角色信息为{messages[i].Value.ToString()},界面为互动听讲端模式");
+                                            listener.IsInteracting();
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                    }
+
+                    else if (messagetype == "3")//通知主讲有听讲申请互动
+                    {
+                        if (showWindowStatus == Status.Speaker || showWindowStatus == Status.BBoardWriting)
+                        {
+                            string listenerId = string.Empty;
+                            string listenerName = string.Empty;
+                            string wsinteractionId = string.Empty;
+                            string wsmaindeviceId = string.Empty;
+                            for (int i = 0; i < messages.Length; i++)
+                            {
+                                if (messages[i].Name == "listenerId")//听讲设备ID
+                                {
+                                    listenerId = messages[i].Value.ToString();
+                                }
+                                if (messages[i].Name == "interactionId")//互动课程ID
+                                {
+                                    wsinteractionId = messages[i].Value.ToString();
+                                    if (messages[i].Value.ToString() != interactionId)
+                                    {
+                                        logger.Error($"互动课程ID不一致,当前课程ID为:{interactionId},申请设备互动ID为:{messages[i].Value}");
+                                        return;
+                                    }
+                                }
+                                if (messages[i].Name == "listenerName")//听讲设备名
+                                {
+                                    listenerName = messages[i].Value.ToString();
+                                }
+                                if (messages[i].Name == "deviceId")//主讲设备ID
+                                {
+                                    wsmaindeviceId = messages[i].Value.ToString();
+                                }
+                            }
+                            if (!string.IsNullOrEmpty(listenerName) && wsmaindeviceId == MainDeviceId && wsinteractionId == interactionId)
+                            {
+                                this.Dispatcher.Invoke(() =>
+                                {
+                                    if (SelectWindowsExit() != null)
+                                    {
+                                        SelectWindowsExit().Close();
+                                    }
+                                    logger.Info($"有新设备申请加入互动,互动设备名称:{listenerName}");
+
+                                    TipTools oldtip = null;
+                                    bool istop = true;
+                                    if (TipWindowsExit() != null)
+                                    {
+                                        oldtip = TipWindowsExit() as TipTools;
+                                        istop = false;
+                                    }
+                                    if (oldtip != null)
+                                    {
+                                        if (oldtip.message.Text != listenerName + "申请互动")
+                                        {
+                                            TipTools joinclass = new TipTools(listenerName, IP, Port, wsinteractionId, listenerId);
+                                            var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                                            if (top == 0 && left == 0)
+                                            {
+                                                top = desktopWorkingArea.Bottom - 3 * joinclass.Height;
+                                                left = desktopWorkingArea.Right - joinclass.Width;
+                                            }
+                                            joinclass.Top = top;
+                                            joinclass.Left = left;
+                                            top = top + joinclass.Height;
+                                            joinclass.Topmost = istop;
+                                            if (istop == false)
+                                            {
+                                                oldtip.Topmost = true;
+                                            }
+                                            joinclass.Show();
+                                            if (top >= (desktopWorkingArea.Bottom))
+                                            {
+                                                top = desktopWorkingArea.Bottom - 3 * joinclass.Height;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        TipTools joinclass = new TipTools(listenerName, IP, Port, wsinteractionId, listenerId);
+                                        var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                                        if (top == 0 && left == 0)
+                                        {
+                                            top = desktopWorkingArea.Bottom - 3 * joinclass.Height;
+                                            left = desktopWorkingArea.Right - joinclass.Width;
+                                        }
+                                        joinclass.Top = top;
+                                        joinclass.Left = left;
+                                        top = top + joinclass.Height;
+                                        joinclass.Topmost = istop;
+                                        if (istop == false)
+                                        {
+                                            oldtip.Topmost = true;
+                                        }
+                                        joinclass.Show();
+                                        if (top >= (desktopWorkingArea.Bottom))
+                                        {
+                                            top = desktopWorkingArea.Bottom - 3 * joinclass.Height;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    else if (messagetype == "4")//互动模式
+                    {
+                        for (int i = 0; i < messages.Length; i++)
+                        {
+                            if (messages[i].Name == "deviceId")
+                            {
+                                if (messages[i].Value.ToString() != currentListenerDeviceId)
+                                {
+                                    return;
+                                }
+                            }
+
+                            if (messages[i].Name == "interMode")//获取当前互动模式 1授课 2互动 3讨论 4板书
+                            {
+                                switch (showWindowStatus)
+                                {
+                                    case Status.Speaker:
+                                        break;
+                                    case Status.BBoardWriting:
+                                        break;
+                                    case Status.ListenClient:
+                                        if (messages[i].Value.ToString() == "2")
+                                        {
+                                            showWindowStatus = Status.InterListenClient;
+                                            listener.IsInteracting();
+                                        }
+                                        else if (messages[i].Value.ToString() == "3")
+                                        {
+                                            showWindowStatus = Status.ListenClient;
+                                            listener.IsDiscussListenClient();
+                                        }
+                                        else
+                                        {
+                                            showWindowStatus = Status.ListenClient;
+                                            listener.IsListenClient();
+                                        }
+                                        break;
+                                    case Status.InterListenClient:
+                                        if (messages[i].Value.ToString() == "2")
+                                        {
+                                            showWindowStatus = Status.InterListenClient;
+                                            listener.IsInteracting();
+                                        }
+                                        else if (messages[i].Value.ToString() == "3")
+                                        {
+                                            showWindowStatus = Status.ListenClient;
+                                            listener.IsDiscussListenClient();
+                                        }
+                                        else
+                                        {
+                                            showWindowStatus = Status.ListenClient;
+                                            listener.IsListenClient();
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                    }
+
+                    else if (messagetype == "10") //结束课程
+                    {
+                        bool ifend = false;
+                        for (int i = 0; i < messages.Length; i++)
+                        {
+                            if (messages[i].Name == "interactionId")
+                            {
+                                if (messages[i].Value.ToString() != interactionId)
+                                {
+                                    return;
+                                }
+                            }
+                            if (messages[i].Name == "bStart")
+                            {
+                                if (messages[i].Value.ToString() == "0")
+                                {
+                                    ifend = true;
+                                }
+                            }
+                            if (messages[i].Name == "deviceId")
+                            {
+                                if (messages[i].Value.ToString() == currentListenerDeviceId && ifend)
+                                {
+                                    logger.Info($"WebSocket客户端收到结束当前设备{messages[i].Value.ToString()}的结束课堂信息");
+                                    if (SelectWindowsExit() != null)
+                                    {
+                                        SelectWindowsExit().Close();
+                                    }
+                                    //课程结束方法
+                                    if (showstatus)
+                                    {
+                                        HideToolView();
+                                    }
+                                    this.Visibility = Visibility.Hidden;
+                                    this.Hide();
+                                    showWindowStatus = Status.None;
+                                    WebSockectClientClose();
+                                    StartTimer();
+                                }
+                            }
+                        }
+                    }
+                    else if (messagetype == "23")//获取设备静音状态
+                    {
+                        if (showWindowStatus == Status.Speaker || showWindowStatus == Status.BBoardWriting)
+                        {
+                            if (SelectWindowsExit() != null)
+                            {
+                                SelectWindowsExit().Close();
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < messages.Length; i++)
+                            {
+                                if (messages[i].Name == "deviceId")
+                                {
+                                    if (messages[i].Value.ToString() != currentListenerDeviceId)
+                                    {
+                                        return;
+                                    }
+                                }
+                                if (messages[i].Name == "muteStatus")
+                                {
+                                    if (messages[i].Value.ToString() == "0")//0 正常语音 1静音
+                                    {
+                                        listener.VoiceStatus();
+                                    }
+                                    else if (messages[i].Value.ToString() == "1")
+                                    {
+                                        listener.MuteStatus();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"WebSocket 客户端处理信息时异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}\r\n.WebSocket信息类型:{messagetype},WebSocket信息:{messages}");
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// 通讯方式从redis通讯改为websocket通讯,消息回执websocket重构
+        /// </summary>
+        public WebSocket ws;
+        public void WebSockectClient()
+        {
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    //测试用先写死23000接口,后面Port开放,使用配置文件中的数据
+                    ws = new WebSocket(@"ws://" + IP + ":" + Port + "/interactionPlatform/api/websocket/" + currentListenerDeviceId);
+
+                    string url = @"ws://" + IP + ":" + Port + "/interactionPlatform/api/websocket/" + currentListenerDeviceId;
+                    logger.Info($"Websocket Url:{url}");
+                    // Set the WebSocket events.
+                    ws.OnOpen += (sender, e) => { logger.Info("WebSocket On Open"); };
+                    ws.OnMessage += (sender, e) =>
+                     {
+                         var body = !e.IsPing ? e.Data : "A ping was received.";
+
+                         logger.Info($"WebSockect Message:{body}");
+                         if (body.ToString() == "start")
+                         {
+                             logger.Info("WebSocket Client 已连接");
+                         }
+
+                         else if (body.ToString() != "A ping was received." && body.ToString() != "start")
+                         {
+                             JObject redisMessage = JObject.Parse(body);
+                             IEnumerable<JProperty> jProperties = redisMessage.Properties();
+                             JProperty[] messages = jProperties.ToArray();
+                             string messagetype = ThisMessageType(messages);
+                             if (messagetype != string.Empty)
+                             {
+                                 DealWithwsMessage(messagetype, messages);
+                             }
+                         }
+                     };
+
+                    ws.OnError += (sender, e) =>
+                    {
+                        logger.Error("WebSockectError:" + e.Message.ToString());
+                    };
+
+                    ws.OnClose += (sender, e) =>
+                    {
+                        logger.Info($"WebSocket Close Code:{e.Code} Reason:{e.Reason}");
+                        if (e.Code != 1005)
+                        {
+                            logger.Error($"WebSocket Client 异常中断,Code:{e.Code} Reason:{e.Reason}");
+                            ws.Connect();//非主动断连导致的异常中断进行重连机制规避,重连期间存在潜在的websocket信息丢失风险
+                        }
+                    };
+
+
+                    // Connect to the server.
+                    ws.Connect();
+
+                    // Connect to the server asynchronously.
+                    //ws.ConnectAsync();
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"WebSocket 客户端异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// websocket客户端主动断连 主动关闭码1005
+        /// </summary>
+        public void WebSockectClientClose()
+        {
+            if (ws != null)
+            {
+                logger.Info("WebSocket Client 主动断连");
+                ws.Close();
+                ws = null;
+            }
+        }
+
+        #region redis客户端代码
+        /// <summary>
+        /// Redis客户端链接,订阅申请互动频道,课堂结束信息频道
+        /// </summary>
         public void RedisClient()
         {
             try
@@ -333,8 +847,11 @@ namespace InteractiveTool
                 redisconnectmessage = ex.Message.ToString();
             }
         }
+        #endregion
 
-        //取消所有订阅
+        /// <summary>
+        /// Redis客户端取消所有频道的订阅
+        /// </summary>
         public void UnSubAllChannel()
         {
             sub.UnsubscribeAll();
@@ -391,13 +908,11 @@ namespace InteractiveTool
                     string context = string.Empty;
                     WebRequest request = WebRequest.Create(url);
                     request.Method = method;
-                    if (method.Equals(WebRequestMethods.Http.Post))
-                    {
-                        logger.Info($"Request:{url}/{param}");
-                    }
+
 
                     if (method.Equals(WebRequestMethods.Http.Post))
                     {
+                        logger.Info($"Http Post Request:{url}/{param}");
                         request.ContentType = "application/json; charset=utf-8";
                         StreamWriter strStream = new StreamWriter(request.GetRequestStream());
                         strStream.Write(param);
@@ -503,50 +1018,57 @@ namespace InteractiveTool
         /// </summary>
         public void AllSelectStatusCancel()
         {
-            this.Dispatcher.Invoke(() =>
+            try
             {
-                logger.Info("后台展示到前台重新初始化界面");
-                slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
-                slienceBtTxt.Text = "全员静音";
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                teachingBtTxt.Foreground = Brushes.AliceBlue;
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                discussingBtTxt.Foreground = Brushes.AliceBlue;
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                interactionBtTxt.Foreground = Brushes.AliceBlue;
-            });
+                this.Dispatcher.Invoke(() =>
+                {
+                    switch (showWindowStatus)
+                    {
+                        case Status.None:
+                            break;
+                        case Status.Speaker:
+                            logger.Info("主讲端无板书模式后台展示到前台重新初始化界面");
+                            slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                            slienceBtTxt.Text = "全员静音";
+                            teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                            teachingBtTxt.Foreground = Brushes.AliceBlue;
+                            discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                            discussingBtTxt.Foreground = Brushes.AliceBlue;
+                            interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                            interactionBtTxt.Foreground = Brushes.AliceBlue;
+                            break;
+                        case Status.BBoardWriting:
+                            bBoardWriting.AllSelectStatusCancel();
+                            break;
+                        case Status.ListenClient:
+                            listener.AllSelectStatusCancel();
+                            break;
+                        case Status.InterListenClient:
+                            listener.AllSelectStatusCancel();
+                            break;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"工具栏界面初始化异常,工具栏状态:{showWindowStatus},异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+            }
         }
 
         /// <summary>
-        /// 查询当前课表
+        /// 获取课堂信息Http请求
         /// </summary>
         public void FindCurriculum()
         {
             try
             {
-
                 JObject data = new JObject();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
-
+                //logger.Info($"FindCurriculum Url:{url}");
                 IssueRequest(url, string.Empty, "GET", ref data);
                 if (data != null)
                 {
                     StopTimer();
-                    if (this.Visibility == Visibility.Hidden)
-                    {
-                        this.Visibility = Visibility.Visible;
-                        var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                        this.Left = (0.5 * desktopWorkingArea.Right) - 250;
-                        this.Top = desktopWorkingArea.Bottom - 64 - 150;
-                        this.Show();
-                        if (showstatus == false)
-                        {
-                            this.Visibility = Visibility.Visible;
-                            this.Topmost = true;
-                            ShowToolView();
-                            AllSelectStatusCancel();
-                        }
-                    }
                     IEnumerable<JProperty> properties = data.Properties();
                     JProperty[] list = properties.ToArray();
                     for (int i = 0; i < list.Length; i++)
@@ -563,8 +1085,52 @@ namespace InteractiveTool
                         {
                             MainDeviceId = list[i].Value.ToString();
                         }
+                        if (list[i].Name == "deviceId")
+                        {
+                            currentListenerDeviceId = list[i].Value.ToString();
+                        }
+                        if (list[i].Name == "deviceRole")
+                        {
+                            if (list[i].Value.ToString() == "0")
+                            {
+                                showWindowStatus = Status.Speaker;
+                            }
+                            else if (list[i].Value.ToString() == "1")
+                            {
+                                showWindowStatus = Status.ListenClient;
+
+                            }
+                            else if (list[i].Value.ToString() == "2")
+                            {
+                                showWindowStatus = Status.InterListenClient;
+                            }
+                        }
+                        if (list[i].Name == "blackboardMode")
+                        {
+                            if (showWindowStatus == Status.Speaker && list[i].Value.ToString() == "1")
+                            {
+                                showWindowStatus = Status.BBoardWriting;
+                            }
+                        }
                     }
-                    logger.Info($"开始上课\n" + $"课堂信息:{curriculumName},互动ID:{interactionId},主讲设备ID:{MainDeviceId}");
+                    if (this.Visibility == Visibility.Hidden)
+                    {
+                        this.Visibility = Visibility.Visible;
+                        var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                        this.Left = (0.5 * desktopWorkingArea.Right) - 250;
+                        this.Top = desktopWorkingArea.Bottom - 64 - 150;
+                        WebSockectClient();
+                        this.Show();
+                        if (showstatus == false)
+                        {
+                            this.Visibility = Visibility.Visible;
+                            this.Topmost = true;
+                            AllSelectStatusCancel();
+                            ShowToolView();
+                        }
+                    }
+                    logger.Info($"开始上课\n" + $"课堂信息:{curriculumName},互动ID:{interactionId},主讲设备ID:{MainDeviceId},当前设备ID:{currentListenerDeviceId},展示状态:{showWindowStatus.ToString()}");
+
                 }
                 else
                 {
@@ -579,16 +1145,23 @@ namespace InteractiveTool
                         this.Hide();
                     }
                     StartTimer();
-                }
 
+                }
             }
             catch (Exception ex)
             {
                 logger.Error($"获取课堂信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"获取课堂信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}", "异常信息");
+
             }
         }
 
+        /// <summary>
+        /// 更改当前教学模式
+        /// </summary>
+        /// <param name="interMode">互动模式 1授课,2互动,3讨论 4板书</param>
+        /// <param name="interactionId">互动ID(会议ID)</param>
+        /// <returns></returns>
         public bool Update_interaction_info(int interMode, string interactionId)
         {
             try
@@ -608,6 +1181,11 @@ namespace InteractiveTool
             }
         }
 
+        /// <summary>
+        /// 全员静音Http请求
+        /// </summary>
+        /// <param name="ctrlMute">静音状态,1静音,0取消静音</param>
+        /// <param name="bSpeaker"></param>
         public void Slience_All(int ctrlMute, int bSpeaker)
         {
             try
@@ -619,23 +1197,36 @@ namespace InteractiveTool
                     + "\"" + "ctrlMute" + "\"" + ":" + ctrlMute.ToString() + ","
                     + "\"" + "bSpeaker" + "\"" + ":" + bSpeaker.ToString() + "}";
 
+                logger.Info($"发送静音指令:{ctrlMute},1:静音，0:取消");
                 IssueRequest(url, param, "POST", ref data);
-                logger.Info($"静音状态:{ctrlMute},1:静音，0:取消");
             }
             catch (Exception ex)
             {
+                logger.Error($"全员静音或取消静音请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 throw ex;
             }
         }
 
+        /// <summary>
+        /// 结束课堂Http请求
+        /// </summary>
         public void Class_End()
         {
             try
             {
                 JObject data = new JObject();
                 string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/over_class";
-                string param = @"{""interactionId""" + ":" + "\"" + interactionId.ToString() + "\"" + ","
-                    + "\"" + "deviceId" + "\"" + ":" + "\"" + MainDeviceId + "\"" + "}";
+                string param = string.Empty;
+                if (showWindowStatus == Status.Speaker || showWindowStatus == Status.BBoardWriting)
+                {
+                    param = @"{""interactionId""" + ":" + "\"" + interactionId.ToString() + "\"" + ","
+                        + "\"" + "deviceId" + "\"" + ":" + "\"" + MainDeviceId + "\"" + "}";
+                }
+                else
+                {
+                    param = @"{""interactionId""" + ":" + "\"" + interactionId.ToString() + "\"" + ","
+                       + "\"" + "deviceId" + "\"" + ":" + "\"" + currentListenerDeviceId + "\"" + "}";
+                }
                 logger.Info($"发送课堂结束请求\n URL:{url}\n param:{param}");
                 //string param = @"{""interactionId""" + ":" + "\"" + "598076" + "\"" + ","
                 //   + "\"" + "deviceId" + "\"" + ":" + "\"" + 35001 + "\"" + "}";
@@ -644,78 +1235,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("结束互动请求失败/r/n" + "异常信息:" + ex.Message + "/r/n 异常栈" + ex.StackTrace);
-            }
-        }
-
-        public void ShowToolView()
-        {
-            this.Dispatcher.Invoke(() =>
-           {
-               showstatus = true;
-               ToolView.Width = 584;
-               ToolView.Height = 64;
-               expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);
-               if (MainView.Visibility == Visibility.Hidden)
-               {
-                   ToolView.ColumnDefinitions.Add(show);//增加展示列
-                                                        //后续可能根据课程信息添加不同的布局界面 newshowwindow.xaml等文件已创建,后续根据新制定的布局界面重构,按键功能导入
-                   MainView.Visibility = Visibility.Visible;
-
-                   ToolView.Children.Add(MainView);//添加展开栏
-                   line.Visibility = Visibility.Visible;//分割线展示
-                   expandergd.ColumnDefinitions.Add(spline);
-                   expandergd.Children.Add(line);
-                   expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
-                   var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                   this.Left = (0.5 * desktopWorkingArea.Right) - 250;
-                   MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
-                   logger.Warn("工具栏展开");
-               }
-           });
-        }
-        public void HideToolView()
-        {
-            this.Dispatcher.Invoke(() =>
-            {
-                showstatus = false;
-                if (SelectWindowsExit() != null)
-                {
-                    SelectWindowsExit().Close();
-                }
-                ToolView.Width = 68;
-                ToolView.Height = 50;
-                if (MainView.Visibility == Visibility.Visible)
-                {
-                    //后续可能根据课程信息选择不同的布局隐藏
-                    MainView.Visibility = Visibility.Hidden;//隐藏功能栏布局
-                    ToolView.Children.Remove(MainView);//remove展示布局
-                    ToolView.ColumnDefinitions.Remove(show);//隐藏展示列
-                    line.Visibility = Visibility.Hidden;//分割线隐藏
-                    expandergd.Children.Remove(line);
-                    expandergd.ColumnDefinitions.Remove(spline);
-                    expanderbd.CornerRadius = new CornerRadius(25, 25, 0, 0);
-                    expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/unfold.png"));
-                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
-                    MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height;
-                    logger.Warn("工具栏收起");
-                    StopHideTimer();
-                }
-            });
-        }
-
-        public bool ShowOrHide()
-        {
-            logger.Info("点击展开或收起按键");
-            if (MainView.Visibility == Visibility.Visible)
-            {
-                HideToolView();
-                return false;
-            }
-            else
-            {
-                ShowToolView();
-                return true;
+                logger.Error($"结束课堂请求失败,异常信息:{ex.Message}\r\n.异常栈:{ex.StackTrace}");
+                throw ex;
             }
         }
 
@@ -730,27 +1251,33 @@ namespace InteractiveTool
             {
                 //触摸屏事件不响应
                 uint extra = GetMessageExtraInfo();
+                logger.Info($"检测信息");
                 bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
                 bool isTouchEvent = ((extra & 0x80) == 0x80);
-                if (isTouchEvent||isPen)
+                if (isTouchEvent || isPen)
                 {
                     return;
                 }
-
                 logger.Info("收起或展开按键鼠标响应");
                 ShowOrHide();
             }
             catch (Exception ex)
             {
+                logger.Error($"收起或展开功能异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
                 MessageBox.Show("异常", ex.Message + " " + ex.StackTrace);
             }
 
         }
+
+        /// <summary>
+        /// 展开或收起按键触摸屏适配
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void fold_touchDown(object sender, TouchEventArgs e)
         {
             try
             {
-
                 this.Dispatcher.BeginInvoke((Action)delegate
                 {
                     logger.Info("展开收起按键触摸屏响应");
@@ -759,9 +1286,204 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
+                logger.Error($"收起或展开功能异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
                 MessageBox.Show("异常", ex.Message + " " + ex.StackTrace);
             }
         }
+
+        /// <summary>
+        /// 展开并加载工具栏方法
+        /// </summary>
+        public void ShowToolView()
+        {
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    showstatus = true;
+                    expanderbd.CornerRadius = new CornerRadius(6, 0, 0, 6);//上侧圆角变左侧圆角
+
+                    ToolView.Height = 64;
+                    switch (showWindowStatus)
+                    {
+                        case Status.Speaker:
+                            logger.Info("展开无板书主讲端");
+                            ToolView.Width = 586;
+                            show.Width = new GridLength(518);
+                            //根据工具栏模式展开不同的工具栏
+                            if (MainView.Visibility == Visibility.Hidden)
+                            {
+                                ToolView.ColumnDefinitions.Add(show);//增加展示列
+                                MainView.SetValue(Grid.ColumnProperty, 1);
+                                MainView.Visibility = Visibility.Visible;
+                                ToolView.Children.Add(MainView);//增添展开栏
+                            }
+                            break;
+                        case Status.BBoardWriting:
+                            logger.Info("展开板书主讲端");
+                            ToolView.Width = 654;
+                            show.Width = new GridLength(586);
+                            if (bBoardWriting.Visibility == Visibility.Hidden)
+                            {
+                                //待添加新界面
+                                ToolView.ColumnDefinitions.Add(show);
+                                bBoardWriting.SetValue(Grid.ColumnProperty, 1);
+                                bBoardWriting.Visibility = Visibility.Visible;
+                                ToolView.Children.Add(bBoardWriting);
+                            }
+                            break;
+                        case Status.ListenClient:
+                            logger.Info("展开听讲端");
+                            ToolView.Width = 654;
+                            show.Width = new GridLength(586);
+                            if (listener.Visibility == Visibility.Hidden)
+                            {
+                                ToolView.ColumnDefinitions.Add(show);
+                                listener.SetValue(Grid.ColumnProperty, 1);
+                                listener.Visibility = Visibility.Visible;
+                                ToolView.Children.Add(listener);
+                            }
+                            break;
+                        case Status.InterListenClient:
+                            logger.Info("展开互动听讲端");
+                            ToolView.Width = 654;
+                            show.Width = new GridLength(586);
+                            if (listener.Visibility == Visibility.Hidden)
+                            {
+                                ToolView.ColumnDefinitions.Add(show);
+                                listener.SetValue(Grid.ColumnProperty, 1);
+                                listener.Visibility = Visibility.Visible;
+                                ToolView.Children.Add(listener);
+                            }
+                            break;
+
+                    }
+                    //展开符号变为收起符号并添加分隔符
+                    line.Visibility = Visibility.Visible;//分割线展示
+                    expandergd.ColumnDefinitions.Add(spline);
+                    expandergd.Children.Add(line);
+                    expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/fold.png"));
+                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                    this.Left = (0.5 * desktopWorkingArea.Right) - 250;
+                    MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height - 150;
+                    logger.Warn("工具栏展开");
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"展示工具栏方法异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// 收起并卸载工具栏部分
+        /// </summary>
+        public void HideToolView()
+        {
+            try
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    showstatus = false;
+                    if (SelectWindowsExit() != null)
+                    {
+                        SelectWindowsExit().Close();
+                    }
+                    ToolView.Width = 68;
+                    ToolView.Height = 50;
+                    //根据工具栏模式展开不同的工具栏
+                    switch (showWindowStatus)
+                    {
+                        case Status.None:
+                            if (MainView.Visibility == Visibility.Visible)
+                            {
+                                //后续可能根据课程信息选择不同的布局隐藏
+                                MainView.Visibility = Visibility.Hidden;//隐藏功能栏布局
+                                ToolView.Children.Remove(MainView);//remove展示布局
+                                ToolView.ColumnDefinitions.Remove(show);//隐藏展示列
+                            }
+                            break;
+                        case Status.Speaker:
+                            if (MainView.Visibility == Visibility.Visible)
+                            {
+                                //后续可能根据课程信息选择不同的布局隐藏
+                                MainView.Visibility = Visibility.Hidden;//隐藏功能栏布局
+                                ToolView.Children.Remove(MainView);//remove展示布局
+                                ToolView.ColumnDefinitions.Remove(show);//隐藏展示列
+                            }
+                            break;
+                        case Status.BBoardWriting:
+                            if (bBoardWriting.Visibility == Visibility.Visible)
+                            {
+                                bBoardWriting.Visibility = Visibility.Hidden;
+                                ToolView.Children.Remove(bBoardWriting);
+                                ToolView.ColumnDefinitions.Remove(show);
+                            }
+                            break;
+                        case Status.ListenClient:
+                            if (listener.Visibility == Visibility.Visible)
+                            {
+                                listener.Visibility = Visibility.Hidden;
+                                ToolView.Children.Remove(listener);
+                                ToolView.ColumnDefinitions.Remove(show);
+                            }
+                            break;
+                        case Status.InterListenClient:
+                            if (listener.Visibility == Visibility.Visible)
+                            {
+                                listener.Visibility = Visibility.Hidden;
+                                ToolView.Children.Remove(listener);
+                                ToolView.ColumnDefinitions.Remove(show);
+                            }
+                            break;
+                    }
+                    line.Visibility = Visibility.Hidden;//分割线隐藏
+                    expandergd.Children.Remove(line);
+                    expandergd.ColumnDefinitions.Remove(spline);
+                    expanderbd.CornerRadius = new CornerRadius(25, 25, 0, 0);//左侧圆角变上侧圆角
+                    expander_bg.Source = new BitmapImage(new Uri("pack://application:,,,/images/unfold.png"));
+                    var desktopWorkingArea = System.Windows.SystemParameters.WorkArea;
+                    MainTool.Top = desktopWorkingArea.Bottom - ToolView.Height;
+                    logger.Warn("工具栏收起");
+                    StopHideTimer();
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"工具栏收起方法异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// 收起或展开按键
+        /// </summary>
+        /// <returns></returns>
+        public bool ShowOrHide()
+        {
+            try
+            {
+                if (showstatus)
+                {
+                    logger.Info("点击收起按键");
+                    HideToolView();
+                    return false;
+                }
+                else
+                {
+                    logger.Info("点击展开按键");
+                    ShowToolView();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"收起或展开按键功能异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
+        }
+
         /// <summary>
         /// 授课模式按键处理
         /// </summary>
@@ -769,52 +1491,71 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void teachingMode_Click(object sender, RoutedEventArgs e)
         {
-            //触摸屏事件不响应
-            uint extra = GetMessageExtraInfo();
-            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
-            bool isTouchEvent = ((extra & 0x80) == 0x80);
-            if (isTouchEvent||isPen)
+            try
             {
-                return;
-            }
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent || isPen)
+                {
+                    return;
+                }
 
-            logger.Info("授课模式控件鼠标操作响应");
-            int interMode = 1;
-            bool result = Update_interaction_info(interMode, interactionId);
-            if (!result)
-            {
-                MessageBox.Show("授课模式请求失败", "提示");
+                logger.Info("授课模式控件鼠标操作响应");
+                int interMode = 1;
+                bool result = Update_interaction_info(interMode, interactionId);
+                if (!result)
+                {
+                    MessageBox.Show("授课模式请求失败", "提示");
+                }
+                this.Dispatcher.Invoke(() =>
+                {
+                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingSelect.png"));
+                    teachingBtTxt.Foreground = Brushes.DeepSkyBlue;
+                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                    discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                    interactionBtTxt.Foreground = Brushes.AliceBlue;
+                });
             }
-            this.Dispatcher.Invoke(() =>
+            catch (Exception ex)
             {
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingSelect.png"));
-                teachingBtTxt.Foreground = Brushes.DeepSkyBlue;
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                discussingBtTxt.Foreground = Brushes.AliceBlue;
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                interactionBtTxt.Foreground = Brushes.AliceBlue;
-            });
+                logger.Error($"授课模式鼠标按键响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+            }
         }
 
-        //适配触摸屏
+        /// <summary>
+        /// 授课模式适配教学一体机
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void teachingMode_TouchDown(object sender, TouchEventArgs e)
         {
-            logger.Info("授课模式控件触摸屏响应");
-            int interMode = 1;
-            bool result = Update_interaction_info(interMode, interactionId);
-            if (!result)
+            try
             {
-                MessageBox.Show("授课模式请求失败", "提示");
+                logger.Info("授课模式控件触摸屏响应");
+                int interMode = 1;
+                bool result = Update_interaction_info(interMode, interactionId);
+                if (!result)
+                {
+                    MessageBox.Show("授课模式请求失败", "提示");
+                }
+                this.Dispatcher.Invoke(() =>
+                {
+                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingSelect.png"));
+                    teachingBtTxt.Foreground = Brushes.DeepSkyBlue;
+                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
+                    discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                    interactionBtTxt.Foreground = Brushes.AliceBlue;
+                });
             }
-            this.Dispatcher.Invoke(() =>
+            catch (Exception ex)
             {
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingSelect.png"));
-                teachingBtTxt.Foreground = Brushes.DeepSkyBlue;
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                discussingBtTxt.Foreground = Brushes.AliceBlue;
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                interactionBtTxt.Foreground = Brushes.AliceBlue;
-            });
+                logger.Error($"授课模式触摸屏申请失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"授课模式申请失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+            }
         }
 
         /// <summary>
@@ -824,70 +1565,72 @@ namespace InteractiveTool
         /// <param name="e"></param>
         private void discussingMode_Click(object sender, RoutedEventArgs e)
         {
-            //触摸屏事件不响应
-            uint extra = GetMessageExtraInfo();
-            bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
-            bool isTouchEvent = ((extra & 0x80) == 0x80);
-            if (isTouchEvent||isPen)
+            try
             {
-                return;
-            }
+                //触摸屏事件不响应
+                uint extra = GetMessageExtraInfo();
+                bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+                bool isTouchEvent = ((extra & 0x80) == 0x80);
+                if (isTouchEvent || isPen)
+                {
+                    return;
+                }
 
-            logger.Info("讨论模式控件鼠标操作响应");
-            int interMode = 3;
-            bool result = Update_interaction_info(interMode, interactionId);
-            if (!result)
-            {
-                MessageBox.Show("讨论模式请求失败", "提示");
+                logger.Info("讨论模式控件鼠标操作响应");
+                int interMode = 3;
+                bool result = Update_interaction_info(interMode, interactionId);
+                if (!result)
+                {
+                    MessageBox.Show("讨论模式请求失败", "提示");
+                }
+                this.Dispatcher.Invoke(() =>
+                {
+                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingSelect.png"));
+                    discussingBtTxt.Foreground = Brushes.DeepSkyBlue;
+                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                    teachingBtTxt.Foreground = Brushes.AliceBlue;
+                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                    interactionBtTxt.Foreground = Brushes.AliceBlue;
+                });
             }
-            this.Dispatcher.Invoke(() =>
+            catch (Exception ex)
             {
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingSelect.png"));
-                discussingBtTxt.Foreground = Brushes.DeepSkyBlue;
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                teachingBtTxt.Foreground = Brushes.AliceBlue;
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                interactionBtTxt.Foreground = Brushes.AliceBlue;
-            });
+                logger.Error($"讨论模式按键请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+            }
         }
+
         /// <summary>
-        /// 适配一体机触摸屏
+        /// 讨论模式适配一体机触摸屏
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void discussingMode_TouchDown(object sender, TouchEventArgs e)
         {
-            logger.Info("讨论模式控件触摸屏响应");
-            int interMode = 3;
-            bool result = Update_interaction_info(interMode, interactionId);
-            if (!result)
+            try
             {
-                MessageBox.Show("讨论模式请求失败", "提示");
+                logger.Info("讨论模式控件触摸屏响应");
+                int interMode = 3;
+                bool result = Update_interaction_info(interMode, interactionId);
+                if (!result)
+                {
+                    MessageBox.Show("讨论模式请求失败", "提示");
+                }
+                this.Dispatcher.Invoke(() =>
+                {
+                    discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingSelect.png"));
+                    discussingBtTxt.Foreground = Brushes.DeepSkyBlue;
+                    teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
+                    teachingBtTxt.Foreground = Brushes.AliceBlue;
+                    interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
+                    interactionBtTxt.Foreground = Brushes.AliceBlue;
+                });
             }
-            this.Dispatcher.Invoke(() =>
+            catch (Exception ex)
             {
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingSelect.png"));
-                discussingBtTxt.Foreground = Brushes.DeepSkyBlue;
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                teachingBtTxt.Foreground = Brushes.AliceBlue;
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                interactionBtTxt.Foreground = Brushes.AliceBlue;
-            });
+                logger.Error($"讨论模式触摸屏请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"讨论模式请求失败,异常信息:{ex.Message}");
+            }
         }
-
-        public void AgreeInteractionModeSelect()
-        {
-            this.Dispatcher.Invoke(() =>
-            {
-                interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
-                interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
-                teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                teachingBtTxt.Foreground = Brushes.AliceBlue;
-                discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                discussingBtTxt.Foreground = Brushes.AliceBlue;
-            });
-        }
-
 
         /// <summary>
         /// 互动听讲按键处理
@@ -902,7 +1645,7 @@ namespace InteractiveTool
                 uint extra = GetMessageExtraInfo();
                 bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
                 bool isTouchEvent = ((extra & 0x80) == 0x80);
-                if (isTouchEvent||isPen)
+                if (isTouchEvent || isPen)
                 {
                     return;
                 }
@@ -936,7 +1679,11 @@ namespace InteractiveTool
             }
         }
 
-        //适配触摸屏
+        /// <summary>
+        /// 互动模式适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void interactionMode_TouchDown(object sender, TouchEventArgs e)
         {
             try
@@ -969,6 +1716,7 @@ namespace InteractiveTool
                 MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
             }
         }
+
         /// <summary>
         /// 静音按键处理
         /// </summary>
@@ -978,12 +1726,21 @@ namespace InteractiveTool
         {
             try
             {
+                if (touchTime != null)
+                {
+                    TimeSpan clickTime = DateTime.Now.TimeOfDay;
+                    TimeSpan dif = clickTime - touchTime;
+                    if ((dif.CompareTo(aviodclick)) < 0)
+                    {
+                        return;
+                    }
+                }
 
                 //触摸屏事件不响应
                 uint extra = GetMessageExtraInfo();
                 bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
                 bool isTouchEvent = ((extra & 0x80) == 0x80);
-                if (isTouchEvent||isPen)
+                if (isTouchEvent || isPen)
                 {
                     return;
                 }
@@ -998,6 +1755,7 @@ namespace InteractiveTool
                             Slience_All(1, 1);
                             slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slienceCancel.png"));
                             slienceBtTxt.Text = "取消静音";
+                            logger.Info("按键状态变为取消静音");
                         }
                     }
                     else
@@ -1007,14 +1765,9 @@ namespace InteractiveTool
                             Slience_All(0, 1);
                             slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
                             slienceBtTxt.Text = "全员静音";
+                            logger.Info("按键状态变为全员静音");
                         }
                     }
-                    //teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                    //teachingBtTxt.Foreground = Brushes.AliceBlue;
-                    //discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                    //discussingBtTxt.Foreground = Brushes.AliceBlue;
-                    //interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                    //interactionBtTxt.Foreground = Brushes.AliceBlue;
                 });
             }
             catch (Exception ex)
@@ -1024,14 +1777,19 @@ namespace InteractiveTool
             }
         }
 
-        //适配触摸屏
+        /// <summary>
+        /// 全员静音模式适配教学一体机触摸屏
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void slienceMode_TouchDown(object sender, TouchEventArgs e)
         {
             try
             {
                 this.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    logger.Info("静音控件触摸屏响应");
+                    touchTime = DateTime.Now.TimeOfDay;
+                    logger.Info($"静音控件触摸屏响应,touchtime:{touchTime}");
                     if (slienceBtTxt.Text == "全员静音")
                     {
                         if (!string.IsNullOrEmpty(interactionId))
@@ -1040,7 +1798,7 @@ namespace InteractiveTool
                             Thread.Sleep(200);
                             slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slienceCancel.png"));
                             slienceBtTxt.Text = "取消静音";
-                            logger.Info("取消静音");
+                            logger.Info("按键状态变为取消静音");
                         }
                     }
                     else
@@ -1051,15 +1809,9 @@ namespace InteractiveTool
                             Thread.Sleep(200);
                             slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
                             slienceBtTxt.Text = "全员静音";
-                            logger.Info("全员静音");
+                            logger.Info("按键状态变为全员静音");
                         }
                     }
-                    //teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
-                    //teachingBtTxt.Foreground = Brushes.AliceBlue;
-                    //discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
-                    //discussingBtTxt.Foreground = Brushes.AliceBlue;
-                    //interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
-                    //interactionBtTxt.Foreground = Brushes.AliceBlue;
                 });
             }
             catch (Exception ex)
@@ -1068,12 +1820,14 @@ namespace InteractiveTool
                 MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
             }
         }
+
         /// <summary>
-        /// 下拉窗口是否存在
+        /// 选择课堂互动窗口是否存在
         /// </summary>
         /// <returns></returns>
         public Window SelectWindowsExit()
         {
+
             foreach (Window item in Application.Current.Windows)
             {
                 if (item is SelectLecture)
@@ -1081,6 +1835,7 @@ namespace InteractiveTool
             }
             return null;
         }
+
         /// <summary>
         /// 提示窗口是否存在
         /// </summary>
@@ -1095,6 +1850,11 @@ namespace InteractiveTool
             return null;
         }
 
+        /// <summary>
+        /// 结束课堂按键,根据听讲端主讲端有无板书模式区分
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void end_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1103,16 +1863,16 @@ namespace InteractiveTool
                 uint extra = GetMessageExtraInfo();
                 bool isPen = ((extra & 0xFFFFFF00) == 0xFF515700);
                 bool isTouchEvent = ((extra & 0x80) == 0x80);
-                if (isTouchEvent||isPen)
+                if (isTouchEvent || isPen)
                 {
                     return;
                 }
 
-                logger.Info("结束课堂控件触摸屏响应");
                 if (!string.IsNullOrEmpty(interactionId))
                 {
                     this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
                     {
+                        logger.Info("结束课堂控件触摸屏响应");
                         Class_End();
                     });
                 }
@@ -1129,22 +1889,32 @@ namespace InteractiveTool
                 {
                     SelectWindowsExit().Close();
                 }
+                if (showstatus)
+                {
+                    HideToolView();
+                }
+                showWindowStatus = Status.None;
+                WebSockectClientClose();
                 this.Visibility = Visibility.Hidden;
                 this.Hide();
                 StartTimer();
             }
         }
 
-        //适配触摸屏
+        /// <summary>
+        /// 结束互动教学一体机触摸屏适配
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void end_TouchDown(object sender, TouchEventArgs e)
         {
             try
             {
                 if (!string.IsNullOrEmpty(interactionId))
                 {
-                    logger.Info("结束课堂按钮触摸屏响应");
                     this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
                     {
+                        logger.Info("结束课堂按钮触摸屏响应");
                         Class_End();
                     });
                 }
@@ -1156,17 +1926,28 @@ namespace InteractiveTool
             }
             finally
             {
-                logger.Warn("课堂结束按键点击,工具后台隐藏");
+                logger.Warn("课堂结束按键触摸屏响应,工具后台隐藏");
                 if (SelectWindowsExit() != null)
                 {
                     SelectWindowsExit().Close();
                 }
+                if (showstatus)
+                {
+                    HideToolView();
+                }
+                showWindowStatus = Status.None;
+                WebSockectClientClose();
                 this.Visibility = Visibility.Hidden;
                 this.Hide();
                 StartTimer();
             }
         }
 
+        /// <summary>
+        /// 光标在工具栏上,停止定时收起功能
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ToolView_MouseEnter(object sender, MouseEventArgs e)
         {
             StopHideTimer();
@@ -1266,10 +2047,14 @@ namespace InteractiveTool
         }
         #endregion
 
+        /// <summary>
+        /// 鼠标窗口拖动
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ToolView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             this.DragMove();//窗口拖拽
         }
-
     }
 }

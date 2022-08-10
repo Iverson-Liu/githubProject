@@ -1,0 +1,53 @@
+﻿<UserControl x:Class="InteractiveTool.ListenClient"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:InteractiveTool"
+        mc:Ignorable="d"
+        Height="64" 
+        Width="586"
+>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ButtonMouseOver.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border x:Name="ListenerClient" Background="#111214" CornerRadius="0,6,6,0">
+        <Grid x:Name="newshowwindow">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="apply_Interaction" Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"  BorderThickness="0" Click="apply_Interaction_Click" TouchDown="apply_Interaction_TouchDown">
+                <StackPanel Width="56" Height="48"  Background="#111214" >
+                    <Image x:Name="applyInteractionBg" Width="22" Height="22" Source="images/apply4interactionUnselect.png"/>
+                    <Grid Height="4"></Grid>
+                    <TextBlock x:Name="applyInteractionBtTxt" FontSize="14" Foreground="White" HorizontalAlignment="Center" Text="申请互动"></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="slienceMode" Style="{DynamicResource OtherButtonStyle}" Background="#111214" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"   BorderThickness="0" Click="slienceMode_Click" TouchDown="slienceMode_TouchDown">
+                <StackPanel Width="56" Height="48"  Background="#111214">
+                    <Image x:Name="slienceBtBg" Width="22" Height="22" Source="images/slience.png"/>
+                    <Grid Height="4"></Grid>
+                    <TextBlock x:Name="slienceBtTxt" FontSize="14" Foreground="White" HorizontalAlignment="Center" Text="静音" ></TextBlock>
+                </StackPanel>
+            </Button>
+
+            <Border Grid.Column="5" Width="112" Height="40" Background="#FF4D4F" CornerRadius="4">
+                <Button x:Name="end" Style="{DynamicResource OverInteractionButtonStyle}" Width="100" Height="40" Content="退出互动" FontSize="16" Foreground="White" Background="#FF4D4F">
+                </Button>
+            </Border>
+
+        </Grid>
+    </Border>
+</UserControl>
