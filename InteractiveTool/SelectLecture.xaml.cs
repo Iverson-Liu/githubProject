@@ -35,8 +35,6 @@ namespace InteractiveTool
         [DllImport("user32.dll")]
         private static extern uint GetMessageExtraInfo();
 
-
-
         public SelectLecture(string configIp, string configPort, string configMac, string configInteractionId)
         {
             if (selectStatus == null)
@@ -128,6 +126,7 @@ namespace InteractiveTool
 
                     if (method.Equals(WebRequestMethods.Http.Post))
                     {
+                        InteractionToolWindow.logger.Info($"Url:{url} Param:{param}");
                         request.ContentType = "application/json; charset=utf-8";
                         StreamWriter strStream = new StreamWriter(request.GetRequestStream());
                         strStream.Write(param);
@@ -319,11 +318,10 @@ namespace InteractiveTool
                         }
                     }
                 }
-
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"获取课堂设备信息请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"获取课堂设备信息请求失败,异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"获取听讲设备异常,互动ID为:{interactionID},异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
             }
         }
@@ -399,8 +397,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"选择听讲端增加设备信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show("听讲端设备信息冲突\n" + $"异常信息;{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"选择听讲端增加设备信息失败,异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"听讲端设备信息冲突,异常信息;{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -423,7 +421,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"主讲端单独设置听讲端设备静音失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"主讲端单独设置听讲端设备静音失败\n 异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
                 //MessageBox.Show($"听讲端静音请求失败,设备id:{deviceid}\n" + $"异常分析:{ex.Message}");
                 throw ex;
             }
@@ -448,8 +446,9 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("切换当前模式为互动模式请求失败\n" + "错误信息:" + ex.Message + "\n 错误栈:" + ex.StackTrace, "异常");
+                InteractionToolWindow.logger.Error($"更新互动状态请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 return false;
+                throw ex;
             }
         }
 
@@ -471,7 +470,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"主讲端选择听讲端请求失败\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 MessageBox.Show("设置听讲端互动请求失败:" + ex.Message + "\n" + ex.StackTrace + "\n" + $"设备ID{deviceId}", "异常处理");
             }
         }
@@ -524,7 +523,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"选中互动设备或取消选中互动设备异常\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"选中互动设备或取消选中互动设备异常,异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n" + $"错误栈:{ex.StackTrace}");
             }
         }
@@ -569,7 +568,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"选中互动设备或取消选中互动设备异常\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"选中互动设备或取消选中互动设备异常,异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
                 MessageBox.Show($"选中课堂错误:错误信息{ex.Message}\n" + $"错误栈:{ex.StackTrace}");
             }
         }
@@ -626,7 +625,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"静音按键状态切换异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 MessageBox.Show($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
             }
         }
@@ -674,7 +673,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"静音按键状态切换异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 MessageBox.Show($"静音按键状态切换异常\n 异常信息:{ex.Message} 异常栈:{ex.StackTrace}");
             }
         }
@@ -810,8 +809,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show("互动请求失败\n" + "错误信息" + ex.Message);
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"互动请求失败,异常信息{ex.Message}.\r\n异常栈:{ex.StackTrace}", "确认按键响应异常提示");
             }
             finally
             {
@@ -874,12 +873,11 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show("互动请求失败\n" + "错误信息" + ex.Message);
+                InteractionToolWindow.logger.Error($"主讲端选择听讲端互动,或主讲端选择听讲端静音请求失败\n 异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"互动请求失败,异常信息{ex.Message}.\r\n异常栈:{ex.StackTrace}", "确认按键响应异常提示");
             }
             finally
             {
-
                 if (InteractionWindowsExit() != null)
                 {
                     InteractionWindowsExit().Topmost = true;

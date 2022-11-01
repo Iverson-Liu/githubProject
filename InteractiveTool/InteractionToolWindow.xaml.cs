@@ -6,11 +6,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -57,10 +60,10 @@ namespace InteractiveTool
         public enum Status
         {
             None = 0,
-            Speaker = 1,
-            BBoardWriting = 2,
-            ListenClient = 3,
-            InterListenClient = 4,
+            Speaker = 1,//主讲端无板书
+            BBoardWriting = 2,//主讲端带板书
+            ListenClient = 3,//听讲端申请互动
+            InterListenClient = 4,//听讲端互动中
             //DiscussListenClient = 5
         }
 
@@ -80,9 +83,11 @@ namespace InteractiveTool
             listener.end.Click += end_Click;
             listener.end.TouchDown += end_TouchDown;
             listener.Visibility = Visibility.Hidden;
+
             bBoardWriting.end.Click += end_Click;
             bBoardWriting.end.TouchDown += end_TouchDown;
             bBoardWriting.Visibility = Visibility.Hidden;
+
             //OldLogDelete();
             IP = ReadConfig("ServerIp");
             Port = ReadConfig("ServerPort");
@@ -115,8 +120,8 @@ namespace InteractiveTool
 
             this.Left = (0.5 * SystemParameters.WorkArea.Right) - 250;
             this.Top = SystemParameters.WorkArea.Bottom - 64 - 150;
-            string url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
-            logger.Info($"FindCurriculum Url:{url}");
+            Url = @"http://" + IP + ":" + Port + "/interactionPlatform/device_api/findCurriculum?mac=" + Mac;
+            logger.Info($"FindCurriculum Url:{Url}");
             this.Visibility = Visibility.Hidden;//新界面兼容时注释掉方便开发
             //新界面兼容时注释掉方便开发
             FindCurriculum();
@@ -164,7 +169,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"日志删除方法失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                logger.Error($"过期日志删除方法失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
@@ -280,7 +285,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"WebSocket获取消息类型失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                logger.Error($"WebSocket Client获取消息类型失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -561,8 +566,8 @@ namespace InteractiveTool
                                     {
                                         HideToolView();
                                     }
-                                    this.Visibility = Visibility.Hidden;
                                     this.Hide();
+                                    this.Visibility = Visibility.Hidden;
                                     showWindowStatus = Status.None;
                                     WebSockectClientClose();
                                     StartTimer();
@@ -608,7 +613,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"WebSocket 客户端处理信息时异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}\r\n.WebSocket信息类型:{messagetype},WebSocket信息:{messages}");
+                logger.Error($"WebSocket Client处理信息时异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}\r\n.WebSocket信息类型:{messagetype},WebSocket信息:{messages}");
                 throw ex;
             }
         }
@@ -629,7 +634,10 @@ namespace InteractiveTool
                     string url = @"ws://" + IP + ":" + Port + "/interactionPlatform/api/websocket/" + currentListenerDeviceId;
                     logger.Info($"Websocket Url:{url}");
                     // Set the WebSocket events.
-                    ws.OnOpen += (sender, e) => { logger.Info("WebSocket On Open"); };
+                    ws.OnOpen += (sender, e) =>
+                    {
+                        logger.Info("WebSocket On Open");
+                    };
                     ws.OnMessage += (sender, e) =>
                      {
                          var body = !e.IsPing ? e.Data : "A ping was received.";
@@ -678,7 +686,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"WebSocket 客户端异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+                logger.Error($"WebSocket Client链接或通讯异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
@@ -687,11 +695,19 @@ namespace InteractiveTool
         /// </summary>
         public void WebSockectClientClose()
         {
-            if (ws != null)
+            try
             {
-                logger.Info("WebSocket Client 主动断连");
-                ws.Close();
-                ws = null;
+                if (ws != null)
+                {
+                    logger.Info("WebSocket Client 主动断连");
+                    ws.Close();
+                    ws = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"WebSocket Client主动断连异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
             }
         }
 
@@ -842,8 +858,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error("Redis客户端异常\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("Redis服务链接或推送信息异常\n" + $"异常信息;{ex.Message}\n 异常栈:{ex.StackTrace}");
+                logger.Error($"Redis客户端异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"Redis服务链接或推送信息异常,异常信息;{ex.Message}.\r\n 异常栈:{ex.StackTrace}", "Redis客户端异常提醒");
                 redisconnectmessage = ex.Message.ToString();
             }
         }
@@ -883,8 +899,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show("请检查配置文件 \n" + ex.Message + "\n" + ex.StackTrace, "异常信息");
-                logger.Error($"配置文件读取错误\n 错误信息:{ex.Message}\n 错误栈:{ex.StackTrace}");
+                logger.Error($"配置文件读取错误\r\n 异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show("请检查配置文件\r\n" + ex.Message + "\n" + ex.StackTrace, "异常信息");
                 throw ex;
             }
         }
@@ -901,6 +917,8 @@ namespace InteractiveTool
             string requesttime = string.Empty;
             JObject result = new JObject();
             string exMessage = string.Empty;
+
+
             try
             {
                 this.Dispatcher.Invoke(() =>
@@ -998,15 +1016,15 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                logger.Error($"Http请求异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 if (!string.IsNullOrEmpty(requesttime))
                 {
-                    logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                    logger.Error($"Http返回异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                     MessageBox.Show($"请求异常!ts:{requesttime}" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 else
                 {
-                    logger.Error($"服务器未响应或请求异常!" + Environment.NewLine + "异常信息: " + ex.Message + Environment.NewLine);
+                    logger.Error($"服务器未响应或请求异常!异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                     //MessageBox.Show("服务器未响应或请求异常!" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 throw ex;
@@ -1051,7 +1069,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"工具栏界面初始化异常,工具栏状态:{showWindowStatus},异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+                logger.Error($"工具栏界面初始化异常,工具栏状态:{showWindowStatus},异常信息:{ex.Message}.\r\n,异常栈:{ex.StackTrace}");
             }
         }
 
@@ -1073,39 +1091,39 @@ namespace InteractiveTool
                     JProperty[] list = properties.ToArray();
                     for (int i = 0; i < list.Length; i++)
                     {
-                        if (list[i].Name == "interactionId")
+                        if (list[i].Name == "interactionId")//互动ID
                         {
                             interactionId = list[i].Value.ToString();
                         }
-                        if (list[i].Name == "curriculumName")
+                        if (list[i].Name == "curriculumName")//当前课程的课程名
                         {
                             curriculumName = list[i].Value.ToString();
                         }
-                        if (list[i].Name == "speakerDeviceId")
+                        if (list[i].Name == "speakerDeviceId")//主讲设备ID
                         {
                             MainDeviceId = list[i].Value.ToString();
                         }
-                        if (list[i].Name == "deviceId")
+                        if (list[i].Name == "deviceId")//当前设备ID
                         {
                             currentListenerDeviceId = list[i].Value.ToString();
                         }
-                        if (list[i].Name == "deviceRole")
+                        if (list[i].Name == "deviceRole")//设备角色
                         {
-                            if (list[i].Value.ToString() == "0")
+                            if (list[i].Value.ToString() == "0")//0 主讲
                             {
                                 showWindowStatus = Status.Speaker;
                             }
-                            else if (list[i].Value.ToString() == "1")
+                            else if (list[i].Value.ToString() == "1")//1 听讲
                             {
                                 showWindowStatus = Status.ListenClient;
 
                             }
-                            else if (list[i].Value.ToString() == "2")
+                            else if (list[i].Value.ToString() == "2")//2 互动听讲
                             {
                                 showWindowStatus = Status.InterListenClient;
                             }
                         }
-                        if (list[i].Name == "blackboardMode")
+                        if (list[i].Name == "blackboardMode")//当前角色是否带有板书模式
                         {
                             if (showWindowStatus == Status.Speaker && list[i].Value.ToString() == "1")
                             {
@@ -1120,7 +1138,6 @@ namespace InteractiveTool
                         this.Left = (0.5 * desktopWorkingArea.Right) - 250;
                         this.Top = desktopWorkingArea.Bottom - 64 - 150;
                         WebSockectClient();
-                        this.Show();
                         if (showstatus == false)
                         {
                             this.Visibility = Visibility.Visible;
@@ -1128,6 +1145,21 @@ namespace InteractiveTool
                             AllSelectStatusCancel();
                             ShowToolView();
                         }
+                        this.IsEnabled = true;
+
+                        this.Show();
+                        ReTouch();
+                        //if (this.CaptureMouse() != true)
+                        //{
+                        //    logger.Error($"强制获取鼠标失败");
+                        //}
+
+                        //this.Focusable = true;
+                        //if (this.Focus() != true)
+                        //{
+                        //    logger.Error($"强制获取焦  失败");
+                        //}
+
                     }
                     logger.Info($"开始上课\n" + $"课堂信息:{curriculumName},互动ID:{interactionId},主讲设备ID:{MainDeviceId},当前设备ID:{currentListenerDeviceId},展示状态:{showWindowStatus.ToString()}");
 
@@ -1145,14 +1177,12 @@ namespace InteractiveTool
                         this.Hide();
                     }
                     StartTimer();
-
                 }
             }
             catch (Exception ex)
             {
-                logger.Error($"获取课堂信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show($"获取课堂信息失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}", "异常信息");
-
+                logger.Error($"获取课堂信息失败\n 异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"获取课堂信息失败\n 异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}", "异常信息");
             }
         }
 
@@ -1175,9 +1205,9 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error("状态设置异常\n 异常信息:" + " " + ex.Message + "\n 异常栈:" + ex.StackTrace);
-                MessageBox.Show("状态设置异常\n 异常信息:" + " " + ex.Message + "\n 异常栈:" + ex.StackTrace);
+                logger.Error($"设置互动模式失败,互动状态为:{interMode},异常信息:{ex.Message}.\r\n异常栈{ex.StackTrace}");
                 return false;
+                throw ex;
             }
         }
 
@@ -1264,9 +1294,7 @@ namespace InteractiveTool
             catch (Exception ex)
             {
                 logger.Error($"收起或展开功能异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
-                MessageBox.Show("异常", ex.Message + " " + ex.StackTrace);
             }
-
         }
 
         /// <summary>
@@ -1278,16 +1306,18 @@ namespace InteractiveTool
         {
             try
             {
-                this.Dispatcher.BeginInvoke((Action)delegate
-                {
-                    logger.Info("展开收起按键触摸屏响应");
-                    ShowOrHide();
-                });
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    logger.Error($"获取触摸屏设备失败");
+                //}
+
+                logger.Info("展开收起按键触摸屏响应");
+                ShowOrHide();
             }
             catch (Exception ex)
             {
                 logger.Error($"收起或展开功能异常,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
-                MessageBox.Show("异常", ex.Message + " " + ex.StackTrace);
+                MessageBox.Show($"展开或收起按键功能能异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
@@ -1517,6 +1547,8 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
@@ -1534,6 +1566,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    logger.Error($"获取触摸屏设备失败");
+                //}
+
                 logger.Info("授课模式控件触摸屏响应");
                 int interMode = 1;
                 bool result = Update_interaction_info(interMode, interactionId);
@@ -1549,12 +1586,14 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
             {
                 logger.Error($"授课模式触摸屏申请失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
-                MessageBox.Show($"授课模式申请失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"授课模式申请失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "授课模式请求异常提示");
             }
         }
 
@@ -1591,6 +1630,8 @@ namespace InteractiveTool
                     teachingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
@@ -1608,6 +1649,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    logger.Error($"获取触摸屏设备失败");
+                //}
+
                 logger.Info("讨论模式控件触摸屏响应");
                 int interMode = 3;
                 bool result = Update_interaction_info(interMode, interactionId);
@@ -1623,12 +1669,14 @@ namespace InteractiveTool
                     teachingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
             {
                 logger.Error($"讨论模式触摸屏请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
-                MessageBox.Show($"讨论模式请求失败,异常信息:{ex.Message}");
+                MessageBox.Show($"讨论模式请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "讨论模式切换异常提醒");
             }
         }
 
@@ -1659,6 +1707,8 @@ namespace InteractiveTool
                     teachingBtTxt.Foreground = Brushes.AliceBlue;
                     discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                     if (SelectWindowsExit() != null)
                     {
                         SelectWindowsExit().ShowDialog();
@@ -1674,8 +1724,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
-                MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+                logger.Error($"互动模式请求失败,异常信息;{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
             }
         }
 
@@ -1690,6 +1739,11 @@ namespace InteractiveTool
             {
                 this.Dispatcher.Invoke(() =>
                 {
+                    //if (this.CaptureTouch(e.TouchDevice) != true)
+                    //{
+                    //    logger.Error($"获取触摸屏设备失败");
+                    //}
+
                     logger.Info("触摸屏操作互动模式控件");
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
                     interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
@@ -1697,6 +1751,8 @@ namespace InteractiveTool
                     teachingBtTxt.Foreground = Brushes.AliceBlue;
                     discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                     if (SelectWindowsExit() != null)
                     {
                         SelectWindowsExit().ShowDialog();
@@ -1712,8 +1768,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
-                MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+                logger.Error($"互动模式请求失败,异常信息;{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"互动模式请求失败,异常信息;{ex.Message}.\r\n 异常栈:{ex.StackTrace}", "更改互动状态异常提醒");
             }
         }
 
@@ -1732,6 +1788,7 @@ namespace InteractiveTool
                     TimeSpan dif = clickTime - touchTime;
                     if ((dif.CompareTo(aviodclick)) < 0)
                     {
+                        logger.Warn($"全员静音按键触摸屏操作升级为鼠标操作,时间戳功能规避");
                         return;
                     }
                 }
@@ -1772,8 +1829,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"全员静音或者取消全员静音失败\n" + $"异常信息:{ex.Message}" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
+                logger.Error($"全员静音或者取消全员静音失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
@@ -1786,6 +1842,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    logger.Error($"获取触摸屏设备失败");
+                //}
+
                 this.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     touchTime = DateTime.Now.TimeOfDay;
@@ -1816,8 +1877,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error($"全员静音或者取消全员静音失败\n" + $"异常信息:{ex.Message}" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
+                logger.Error($"全员静音或者取消全员静音失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"全员静音或取消静音请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "全员静音按键异常提醒");
             }
         }
 
@@ -1827,13 +1888,20 @@ namespace InteractiveTool
         /// <returns></returns>
         public Window SelectWindowsExit()
         {
-
-            foreach (Window item in Application.Current.Windows)
+            try
             {
-                if (item is SelectLecture)
-                    return item;
+                foreach (Window item in Application.Current.Windows)
+                {
+                    if (item is SelectLecture)
+                        return item;
+                }
+                return null;
             }
-            return null;
+            catch (Exception ex)
+            {
+                logger.Error($"选择互动教室窗口检测失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
         }
 
         /// <summary>
@@ -1842,12 +1910,20 @@ namespace InteractiveTool
         /// <returns></returns>
         public Window TipWindowsExit()
         {
-            foreach (Window item in Application.Current.Windows)
+            try
             {
-                if (item is TipTools)
-                    return item;
+                foreach (Window item in Application.Current.Windows)
+                {
+                    if (item is TipTools)
+                        return item;
+                }
+                return null;
             }
-            return null;
+            catch (Exception ex)
+            {
+                logger.Error($"申请互动教室提示窗口检测失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
         }
 
         /// <summary>
@@ -1872,15 +1948,14 @@ namespace InteractiveTool
                 {
                     this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
                     {
-                        logger.Info("结束课堂控件触摸屏响应");
+                        logger.Info("结束课堂控件鼠标点击响应");
                         Class_End();
                     });
                 }
             }
             catch (Exception ex)
             {
-                logger.Error("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                logger.Error($"课堂结束请求发送失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
             finally
             {
@@ -1910,6 +1985,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    logger.Error($"获取触摸屏设备失败");
+                //}
+
                 if (!string.IsNullOrEmpty(interactionId))
                 {
                     this.Dispatcher.BeginInvoke(DispatcherPriority.Normal, (Action)delegate ()
@@ -1921,8 +2001,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                logger.Error("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("课堂结束请求发送失败\n" + $"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                logger.Error($"课堂结束请求发送失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"课堂结束请求发送失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "结束课堂异常信息提醒");
             }
             finally
             {
@@ -2055,6 +2135,73 @@ namespace InteractiveTool
         private void ToolView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             this.DragMove();//窗口拖拽
+        }
+
+        /// <summary>
+        /// 获取逻辑触控设备
+        /// </summary>
+        /// <returns></returns>
+        private object GetStylusLogic()
+        {
+            TabletDeviceCollection devices = System.Windows.Input.Tablet.TabletDevices;
+
+            if (devices.Count > 0)
+            {
+                // Get the Type of InputManager.获取输入设备管理器
+                Type inputManagerType = typeof(System.Windows.Input.InputManager);
+
+                // Call the StylusLogic method on the InputManager.Current instance.
+                object stylusLogic = inputManagerType.InvokeMember("StylusLogic",
+                    BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
+                    null, InputManager.Current, null);
+
+                return stylusLogic;
+            }
+
+            return null;
+        }
+
+
+        /// <summary>
+        /// 注销触摸后重新注册
+        /// </summary>
+        public void ReTouch()
+        {
+            try
+            {
+                object stylusLogic = GetStylusLogic();
+
+                if (stylusLogic == null)
+                {
+                    return;
+                }
+
+                Type inputManagerType = typeof(System.Windows.Input.InputManager);
+                var wispLogicType = inputManagerType.Assembly.GetType("System.Windows.Input.StylusWisp.WispLogic");
+
+                var windowInteropHelper = new WindowInteropHelper(this);
+                var hwndSource = HwndSource.FromHwnd(windowInteropHelper.Handle);
+
+                var unRegisterHwndForInputMethodInfo = wispLogicType.GetMethod("UnRegisterHwndForInput",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+
+                unRegisterHwndForInputMethodInfo.Invoke(stylusLogic, new object[] { hwndSource });
+
+
+                var registerHwndForInputMethodInfo = wispLogicType.GetMethod("RegisterHwndForInput",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+
+                registerHwndForInputMethodInfo.Invoke(stylusLogic, new object[]
+                {
+                InputManager.Current,
+                PresentationSource.FromVisual(this)
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.Error($"注销触摸屏重新注册失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
         }
     }
 }

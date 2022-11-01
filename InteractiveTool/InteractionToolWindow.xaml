@@ -24,7 +24,7 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid   x:Name="ToolView" Width="586" Height="64" MouseLeave="ToolView_MouseLeave" MouseEnter="ToolView_MouseEnter" MouseLeftButtonDown="ToolView_MouseLeftButtonDown">
+    <Grid   x:Name="ToolView" Width="586" Height="64" MouseLeave="ToolView_MouseLeave" MouseEnter="ToolView_MouseEnter" MouseLeftButtonDown="ToolView_MouseLeftButtonDown" >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="68"/>
             <ColumnDefinition  x:Name="show"/>

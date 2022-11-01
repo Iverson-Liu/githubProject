@@ -1,0 +1,126 @@
+﻿<Window x:Class="ConfigTools.ConfigTool"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Fluent="urn:fluent-ribbon"
+        xmlns:local="clr-namespace:ConfigTools"
+
+        mc:Ignorable="d"
+        Title="互动工具"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="{x:Null}"            
+        WindowStartupLocation="CenterScreen"             
+        Height="391" Width="578"
+        >
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ButtonMouseOver.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="#191D21" CornerRadius="10" Padding="0" Margin="0" MouseLeftButtonDown="ConfigView_MouseLeftButtonDown">
+
+        <Grid x:Name="ConfigView">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1.1*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="1.4*"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.3*"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="0.2*"/>
+                    <ColumnDefinition Width="0.2*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Padding="0" Margin="20,15,0,0">
+                    <Image Height="28"  Width="28" HorizontalAlignment="Left" VerticalAlignment="Top" Source="pack://application:,,,/images/logo.png" />
+                </Border>
+                <Border Grid.Column="1" Padding="0" Margin="0,18,0,0">
+                    <TextBlock  VerticalAlignment="Top" FontSize="18"  Text="互动工具" Foreground="White" HorizontalAlignment="Left"/>
+                </Border>
+                <Border   HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="2"   BorderThickness="0" Margin="0" Padding="0">
+                    <Button x:Name="min" Style="{DynamicResource OtherButtonStyle}"  Background="#191D21" Click="Min_Click"  BorderThickness="0" Margin="0,10,0,0" Padding="0">
+                        <StackPanel >
+                            <Image Height="30" Width="40"  Source="pack://application:,,,/images/minimize.png"></Image>
+                        </StackPanel>
+                    </Button>
+                </Border>
+                <Border Grid.Column="3"  HorizontalAlignment="Right" VerticalAlignment="Top"  BorderThickness="0" Margin="0,10,0,10" >
+                    <Grid>
+                        <Button Style="{DynamicResource OtherButtonStyle}" x:Name="close" Background="#191D21" Click="Close_Click" BorderThickness="0" Margin="0" Padding="0">
+                            <StackPanel >
+                                <Image Height="30" Width="40"  Source="pack://application:,,,/images/close.png"></Image>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.6*"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Label  Foreground="White" FontSize="14" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Margin="10"  Content="互动课堂服务IP:"></Label>
+
+                <Border Grid.Column="1" Background="White" Height="40" Width="272" HorizontalAlignment="Left" CornerRadius="4" >
+                    <Grid>
+                        <!--<TextBox lib:Assists.PlaceHolder="自定义水印内容和颜色" lib:Assists.PlaceHolderBrush="Red"></TextBox>-->
+                        <TextBox  x:Name="IP"  Grid.Column="1" Height="40" Width="265" HorizontalAlignment="Center" BorderThickness="0"  Background="White" FontSize="18" VerticalAlignment="Center"  Padding="0,8,0,0"  TextChanged="Ip_Changed">
+                        </TextBox>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Opacity="0.5" x:Name="txtIpTip" Text="请配置服务IP" Padding="10" MouseDown="txtIpTip_MouseDown"></TextBlock>
+                    </Grid>
+                </Border>
+
+            </Grid>
+
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.6*"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Label  Foreground="White" FontSize="14" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Margin="10"  Content="互动课堂服务端口:"></Label>
+                <Border Grid.Column="2" Background="White" Height="40" Width="272" HorizontalAlignment="Left" CornerRadius="4" >
+                    <Grid>
+                        <TextBox x:Name="Port" Height="40" Grid.Column="1" FontSize="18"  Width="265" HorizontalAlignment="Center" BorderThickness="0" Background="White" Padding="0,8,0,0" TextChanged="Port_TextChanged">
+                        </TextBox>
+                        <TextBlock Grid.Column="1" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtPortTip" Text="请配置服务端口" Padding="10" MouseDown="txtPortTip_MouseDown"></TextBlock>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.6*"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Label  Foreground="White" FontSize="14" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Margin="10"  Content="互动终端MAC:"></Label>
+                <Border Grid.Column="3" Background="White" Height="40" Width="272" HorizontalAlignment="Left" CornerRadius="4" >
+                    <Grid>
+                        <TextBox x:Name="Mac"  Grid.Column="1" Height="40" Width="265" Background="White" BorderThickness="0" FontSize="18" VerticalAlignment="Center"  HorizontalAlignment="Center" TextChanged="Mac_TextChanged" Padding="0,8,0,0">
+
+                        </TextBox>
+                        <TextBlock Grid.Column="1" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0.5" x:Name="txtMacTip" Text="请配置互动终端MAC" Padding="10" MouseDown="txtMacTip_MouseDown"></TextBlock>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid  Grid.Row="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Border Width="210" Background="#1890FF" Height="45" CornerRadius="4"  VerticalAlignment="Top" Margin="0,20,0,0">
+                    <Button x:Name="configfinish" Style="{DynamicResource OverButtonStyle}" Width="200" Height="40"   HorizontalAlignment="Center" VerticalAlignment="Center" Background="#1890FF"   Content="完成配置" FontSize="18" Foreground="White" TouchDown="ConfigFinish_TouchDown" Click="ConfigFinish_Click" ></Button>
+                </Border>
+            </Grid>
+        </Grid>
+
+    </Border>
+</Window>

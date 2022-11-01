@@ -4,8 +4,15 @@ using System.Collections.Generic;
 using System.IO;
 namespace ConfigTools
 {
+    /// <summary>
+    /// 开机自启动类,实现方式通过在shell:startup路径下创建运行程序快捷方式实现开机自启
+    /// </summary>
     class AutoStartUp
     {
+        /// <summary>
+        /// 构造函数,传入当前路径下的程序名
+        /// </summary>
+        /// <param name="autoStartFile">需要自启动的程序文件名</param>
         public AutoStartUp(string autoStartFile)
         {
             this.appAllPath = AppDomain.CurrentDomain.BaseDirectory + autoStartFile;
@@ -14,7 +21,7 @@ namespace ConfigTools
         /// <summary>
         /// 快捷方式名称-任意自定义
         /// </summary>
-        private const string QuickName = "BootUp";
+        private const string QuickName = "InteractiveTool";
 
         /// <summary>
         /// 自动获取系统自动启动目录

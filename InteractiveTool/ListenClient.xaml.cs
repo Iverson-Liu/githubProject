@@ -192,7 +192,7 @@ namespace InteractiveTool
             {
                 this.Dispatcher.Invoke(() =>
                 {
-                    InteractionToolWindow.logger.Info($"听讲端申请互动按键套路模式下禁用");
+                    InteractionToolWindow.logger.Info($"听讲端申请互动按键讨论模式下禁用");
                     applyInteractionBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/apply4interactionCannotselect.png"));
                     applyInteractionBtTxt.Text = "申请互动";
                     applyInteractionBtTxt.Foreground = Brushes.Gray;
@@ -357,6 +357,7 @@ namespace InteractiveTool
                     TimeSpan dif = clickTime - applyInteractionModeTouchTime;
                     if ((dif.CompareTo(aviodclick)) < 0)
                     {
+                        InteractionToolWindow.logger.Warn($"申请互动请求触控屏响应升级为鼠标操作,使用时间戳间隔功能规避");
                         return;
                     }
                 }
@@ -382,8 +383,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"申请互动请求失败,异常信息:{ex.Message.ToString()}");
-                InteractionToolWindow.logger.Error($"申请互动请求失败,异常信息:{ex.Message.ToString()},异常栈:{ex.StackTrace.ToString()}");
+                InteractionToolWindow.logger.Error($"申请互动请求失败,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+                MessageBox.Show($"申请互动请求失败,异常信息:{ex.Message}");
             }
         }
 
@@ -398,6 +399,7 @@ namespace InteractiveTool
             {
                 this.Dispatcher.Invoke(() =>
                 {
+                    //this.Cursor = Cursors.Wait;
                     applyInteractionModeTouchTime = DateTime.Now.TimeOfDay;
                     InteractionToolWindow.logger.Info($"申请互动控件触摸屏响应,touchtime:{applyInteractionModeTouchTime}");
 
@@ -412,8 +414,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"申请互动请求失败,异常信息:{ex.Message.ToString()}");
-                InteractionToolWindow.logger.Error($"申请互动请求失败,异常信息:{ex.Message.ToString()},异常栈:{ex.StackTrace.ToString()}");
+                InteractionToolWindow.logger.Error($"申请互动请求失败,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+                MessageBox.Show($"申请互动请求失败,异常信息:{ex.Message}");
             }
         }
 
@@ -433,6 +435,7 @@ namespace InteractiveTool
                     TimeSpan dif = clickTime - slienceModeTouchTime;
                     if ((dif.CompareTo(aviodclick)) < 0)
                     {
+                        InteractionToolWindow.logger.Warn($"静音按键触控屏操作升级成鼠标操作,使用时间戳间隔方法规避");
                         return;
                     }
                 }
@@ -465,8 +468,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message.ToString()}");
-                InteractionToolWindow.logger.Error($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message.ToString()},异常栈:{ex.StackTrace.ToString()}");
+                InteractionToolWindow.logger.Error($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+                MessageBox.Show($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message}");
             }
         }
 
@@ -500,8 +503,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message.ToString()}");
-                InteractionToolWindow.logger.Error($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message.ToString()},异常栈:{ex.StackTrace.ToString()}");
+                InteractionToolWindow.logger.Error($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message},异常栈:{ex.StackTrace}");
+                MessageBox.Show($"听讲端设备{InteractionToolWindow.currentListenerDeviceId}静音请求失败,异常信息:{ex.Message}");
             }
         }
     }

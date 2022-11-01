@@ -81,12 +81,20 @@ namespace InteractiveTool
         /// <returns></returns>
         public Window SelectWindowsExit()
         {
-            foreach (Window item in Application.Current.Windows)
+            try
             {
-                if (item is SelectLecture)
-                    return item;
+                foreach (Window item in Application.Current.Windows)
+                {
+                    if (item is SelectLecture)
+                        return item;
+                }
+                return null;
             }
-            return null;
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"申请互动提示窗口检测选择听讲端教室窗口失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
         }
 
         /// <summary>
@@ -303,7 +311,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"申请加入互动时,发送主讲端选择听讲端互动请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"申请加入互动时,发送主讲端选择听讲端互动请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -327,7 +335,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"申请加入互动时,发送将当前模式切换为互动模式请求失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"申请加入互动时,发送将当前模式切换为互动模式请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 throw ex;
             }
         }
@@ -443,7 +451,15 @@ namespace InteractiveTool
                     }
                     else
                     {
-                        deviceid += "/" + DeviceId;
+                        if (deviceid.Contains(DeviceId))
+                        {
+                            InteractionToolWindow.logger.Warn("当前教室已经在互动中,未发送该设备的同意互动请求");
+                            return;
+                        }
+                        else
+                        {
+                            deviceid += "/" + DeviceId;
+                        }
                     }
                     Set_Interaction(deviceid);
                     Thread.Sleep(200);
@@ -460,8 +476,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"申请加入互动失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show($"加入互动失败\n 异常信息:{ex.Message}.\r\n");
+                InteractionToolWindow.logger.Error($"申请加入互动失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"加入互动失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
             finally
             {
@@ -505,7 +521,15 @@ namespace InteractiveTool
                     }
                     else
                     {
-                        deviceid += "/" + DeviceId;
+                        if (deviceid.Contains(DeviceId))
+                        {
+                            InteractionToolWindow.logger.Warn("当前教室已经在互动中,未发送该设备的同意互动请求");//
+                            return;
+                        }
+                        else
+                        {
+                            deviceid += "/" + DeviceId;
+                        }
                     }
                     Set_Interaction(deviceid);
                     Thread.Sleep(200);
@@ -522,8 +546,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"申请加入互动失败\n 异常信息:{ex.Message}\n 异常栈:{ex.StackTrace}");
-                MessageBox.Show($"加入互动失败\n 异常信息:{ex.Message}");
+                InteractionToolWindow.logger.Error($"申请加入互动失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"加入互动失败,异常信息:{ex.Message}\r\n异常栈:{ex.StackTrace}");
             }
             finally
             {

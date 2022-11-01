@@ -133,15 +133,15 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                InteractionToolWindow.logger.Error($"发起请求异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                 if (!string.IsNullOrEmpty(requesttime))
                 {
-                    InteractionToolWindow.logger.Error($"异常信息:{ex.Message}\n" + $"异常栈:{ex.StackTrace}");
+                    InteractionToolWindow.logger.Error($"请求返回异常,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                     MessageBox.Show($"请求异常!ts:{requesttime}" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 else
                 {
-                    InteractionToolWindow.logger.Error($"服务器未响应或请求异常!" + Environment.NewLine + "异常信息: " + ex.Message + Environment.NewLine);
+                    InteractionToolWindow.logger.Error($"服务器未响应或请求异常! 异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
                     //MessageBox.Show("服务器未响应或请求异常!" + Environment.NewLine + "异常信息:" + ex.Message + Environment.NewLine, "异常处理");
                 }
                 throw ex;
@@ -197,7 +197,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error("状态设置异常\n 异常信息:" + " " + ex.Message + "\n 异常栈:" + ex.StackTrace);
+                InteractionToolWindow.logger.Error($"状态设置异常,异常信息:{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
                 return false;
             }
         }
@@ -263,6 +263,8 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
@@ -280,6 +282,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    InteractionToolWindow.logger.Error($"获取触摸屏设备失败");
+                //}
+
                 InteractionToolWindow.logger.Info("授课模式控件触摸屏响应");
                 int interMode = 1;
                 bool result = Update_interaction_info(interMode, InteractionToolWindow.interactionId);
@@ -289,6 +296,7 @@ namespace InteractiveTool
                 }
                 this.Dispatcher.Invoke(() =>
                 {
+
                     teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingSelect.png"));
                     teachingBtTxt.Foreground = Brushes.DeepSkyBlue;
                     discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingUnselect.png"));
@@ -297,12 +305,14 @@ namespace InteractiveTool
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
                     bBoardWritingBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/bboardwritingUnselect.png"));
                     bBoardWritingTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"授课模式触摸屏请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
-                MessageBox.Show($"授课模式触摸屏请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "警告");
+                MessageBox.Show($"授课模式触摸屏请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "设置授课模式异常警告");
             }
         }
 
@@ -340,6 +350,8 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
@@ -357,6 +369,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    InteractionToolWindow.logger.Error($"获取触摸屏设备失败");
+                //}
+
                 InteractionToolWindow.logger.Info("板书模式控件触控屏操作响应");
                 int interMode = 4;
                 bool result = Update_interaction_info(interMode, InteractionToolWindow.interactionId);
@@ -366,6 +383,7 @@ namespace InteractiveTool
                 }
                 this.Dispatcher.Invoke(() =>
                 {
+
                     bBoardWritingBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/bboardwritingSelect.png"));
                     bBoardWritingTxt.Foreground = Brushes.DeepSkyBlue;
                     teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
@@ -374,12 +392,14 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionUnselect.png"));
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"板书模式触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
-                MessageBox.Show($"板书模式触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "警告");
+                MessageBox.Show($"板书模式触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "设置板书模式异常警告");
             }
         }
 
@@ -419,6 +439,8 @@ namespace InteractiveTool
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
                     bBoardWritingBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/bboardwritingUnselect.png"));
                     bBoardWritingTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
@@ -436,6 +458,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    InteractionToolWindow.logger.Error($"获取触摸屏设备失败");
+                //}
+
                 InteractionToolWindow.logger.Info("讨论模式控件触摸屏响应");
                 int interMode = 3;
                 bool result = Update_interaction_info(interMode, InteractionToolWindow.interactionId);
@@ -446,6 +473,8 @@ namespace InteractiveTool
 
                 this.Dispatcher.Invoke(() =>
                 {
+
+
                     discussingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/discussingSelect.png"));
                     discussingBtTxt.Foreground = Brushes.DeepSkyBlue;
                     teachingBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/teachingUnselect.png"));
@@ -454,12 +483,14 @@ namespace InteractiveTool
                     interactionBtTxt.Foreground = Brushes.AliceBlue;
                     bBoardWritingBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/bboardwritingUnselect.png"));
                     bBoardWritingTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                 });
             }
             catch (Exception ex)
             {
                 InteractionToolWindow.logger.Error($"讨论模式触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
-                MessageBox.Show($"讨论模式触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "警告");
+                MessageBox.Show($"讨论模式触摸屏响应失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "设置讨论模式异常警告");
             }
         }
 
@@ -492,6 +523,8 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     bBoardWritingBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/bboardwritingUnselect.png"));
                     bBoardWritingTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                     if (SelectWindowsExit() != null)
                     {
                         SelectWindowsExit().ShowDialog();
@@ -507,8 +540,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
-                MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+                InteractionToolWindow.logger.Error($"互动模式请求失败,异常信息;{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
@@ -523,6 +555,11 @@ namespace InteractiveTool
             {
                 this.Dispatcher.Invoke(() =>
                 {
+                    //if (this.CaptureTouch(e.TouchDevice) != true)
+                    //{
+                    //    InteractionToolWindow.logger.Error($"获取触摸屏设备失败");
+                    //}
+
                     InteractionToolWindow.logger.Info("触摸屏操作互动模式控件");
                     interactionBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/interactionSelect.png"));
                     interactionBtTxt.Foreground = Brushes.DeepSkyBlue;
@@ -532,6 +569,8 @@ namespace InteractiveTool
                     discussingBtTxt.Foreground = Brushes.AliceBlue;
                     bBoardWritingBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/bboardwritingUnselect.png"));
                     bBoardWritingTxt.Foreground = Brushes.AliceBlue;
+                    slienceBtBg.Source = new BitmapImage(new Uri("pack://application:,,,/images/slience.png"));
+                    slienceBtTxt.Text = "全员静音";
                     if (SelectWindowsExit() != null)
                     {
                         SelectWindowsExit().ShowDialog();
@@ -547,8 +586,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
-                MessageBox.Show($"互动模式请求失败,错误信息;{ex.Message.ToString()} 错误栈:{ex.StackTrace.ToString()}");
+                InteractionToolWindow.logger.Error($"互动模式请求失败,异常信息;{ex.Message}.\r\n 异常栈:{ex.StackTrace}");
+                MessageBox.Show($"互动模式请求失败,异常信息;{ex.Message}.\r\n 异常栈:{ex.StackTrace}", "设置互动模式异常警告");
             }
         }
 
@@ -611,8 +650,7 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"全员静音或者取消全员静音失败\n" + $"异常信息:{ex.Message}" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
+                InteractionToolWindow.logger.Error($"全员静音或者取消全员静音失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
             }
         }
 
@@ -625,6 +663,11 @@ namespace InteractiveTool
         {
             try
             {
+                //if (this.CaptureTouch(e.TouchDevice) != true)
+                //{
+                //    InteractionToolWindow.logger.Error($"获取触摸屏设备失败");
+                //}
+
                 this.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     touchTime = DateTime.Now.TimeOfDay;
@@ -661,8 +704,8 @@ namespace InteractiveTool
             }
             catch (Exception ex)
             {
-                InteractionToolWindow.logger.Error($"全员静音或者取消全员静音失败\n" + $"异常信息:{ex.Message}" + $"异常栈:{ex.StackTrace}");
-                MessageBox.Show("全员静音或取消静音请求失败\n" + $"异常信息:{ex.Message}");
+                InteractionToolWindow.logger.Error($"全员静音或者取消全员静音失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                MessageBox.Show($"全员静音或取消静音请求失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}", "设置全员静音异常警告");
             }
 
         }
@@ -673,12 +716,20 @@ namespace InteractiveTool
         /// <returns></returns>
         public Window SelectWindowsExit()
         {
-            foreach (Window item in Application.Current.Windows)
+            try
             {
-                if (item is SelectLecture)
-                    return item;
+                foreach (Window item in Application.Current.Windows)
+                {
+                    if (item is SelectLecture)
+                        return item;
+                }
+                return null;
             }
-            return null;
+            catch (Exception ex)
+            {
+                InteractionToolWindow.logger.Error($"选择教室互动窗口检测失败,异常信息:{ex.Message}.\r\n异常栈:{ex.StackTrace}");
+                throw ex;
+            }
         }
 
         /// <summary>
