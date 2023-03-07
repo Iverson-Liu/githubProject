@@ -68,7 +68,8 @@ namespace InteractiveTool
         }
 
         /// <summary>
-        /// list等对象释放
+        /// list等对象释放,没有调用该方法时,
+        /// 快速点击确定或取消后再点击互动窗口会因为上一次的列表资源没有完全释放导致本次课堂信息列表缺失
         /// </summary>
         public static void Dispose()
         {

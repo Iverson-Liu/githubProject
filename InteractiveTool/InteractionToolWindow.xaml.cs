@@ -87,7 +87,7 @@ namespace InteractiveTool
             bBoardWriting.end.Click += end_Click;
             bBoardWriting.end.TouchDown += end_TouchDown;
             bBoardWriting.Visibility = Visibility.Hidden;
-
+            
             //OldLogDelete();
             IP = ReadConfig("ServerIp");
             Port = ReadConfig("ServerPort");
